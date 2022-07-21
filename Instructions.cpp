@@ -240,6 +240,14 @@ BaseInstruction::BaseInstruction(llvm::Instruction *instruction)
     this->instruction = instruction;
     this->instruction_type = NOT_ASSIGNED;
     this->has_pointer_variables = false;
+    this->has_source_line_number = false;
+
+    // Set the source line number
+    if (instruction->getDebugLoc())
+    {
+        this->source_line_number = instruction->getDebugLoc().getLine();
+        has_source_line_number = true;
+    }
 }
 
 void BaseInstruction::setInstructionId(long long id)
@@ -271,6 +279,21 @@ InstructionType BaseInstruction::getInstructionType()
 llvm::Instruction * BaseInstruction::getLLVMInstruction()
 {
     return this->instruction;
+}
+
+// Checks whether the instruction has any relation to a statement in the source program or not
+bool BaseInstruction::hasSourceLineNumber()
+{
+    return this->has_source_line_number;
+}
+
+// Returns the source program line number corresponding to this instruction
+unsigned BaseInstruction::getSourceLineNumber()
+{
+    // Check whether the instruction corresponds to a statement in the source program or not
+    assert(has_source_line_number);
+
+    return this->source_line_number;
 }
 
 // Returns whether the instruction has pointer variables or not

@@ -9,6 +9,7 @@
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/IR/CFG.h"
+#include "llvm/IR/DebugLoc.h"
 #include <vector>
 #include <map>
 #include <utility>
@@ -136,7 +137,11 @@ protected:
     llvm::Instruction *instruction;
     std::vector<std::pair<SLIMOperand *, int>> operands;
     std::pair<SLIMOperand *, int> result;
+    bool has_source_line_number;
     bool has_pointer_variables;
+    
+    // The source program line number corresponding to this instruction
+    unsigned source_line_number;
 
 public:
     BaseInstruction(llvm::Instruction *instruction);
@@ -144,6 +149,13 @@ public:
     long long getInstructionId();
     InstructionType getInstructionType();
     llvm::Instruction * getLLVMInstruction();
+
+    // Checks whether the instruction has any relation to a statement in the source program or not
+    bool hasSourceLineNumber();
+    
+    // Returns the source program line number corresponding to this instruction
+    unsigned getSourceLineNumber();
+
     bool hasPointerVariables();
     void printLLVMInstruction();
     virtual void printInstruction() = 0;
