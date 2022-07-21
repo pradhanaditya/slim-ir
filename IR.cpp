@@ -1,6 +1,7 @@
 #include "IR.h"
 
 long long slim::IR::total_instructions = 0;
+long long slim::IR::total_basic_blocks = 0;
 
 // Process the llvm instruction and return the corresponding SLIM instruction
 BaseInstruction * slim::processLLVMInstruction(llvm::Instruction &instruction)
@@ -225,6 +226,10 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
             // Create function-basicblock pair
             std::pair<llvm::Function *, llvm::BasicBlock *> func_basic_block{&function, &basic_block};
 
+            this->basic_block_to_id[&basic_block] = slim::IR::total_basic_blocks;
+
+            slim::IR::total_basic_blocks++;
+
             // For each instruction in the basic block 
             for (llvm::Instruction &instruction : basic_block.getInstList())
             {
@@ -310,6 +315,14 @@ BaseInstruction * slim::IR::getInstrFromIndex(long long index)
     return this->inst_id_to_object[index];
 }
 
+// Get basic block id
+long long slim::IR::getBasicBlockId(llvm::BasicBlock *basic_block)
+{
+    assert(this->basic_block_to_id.find(basic_block) != this->basic_block_to_id.end());
+
+    return this->basic_block_to_id[basic_block];
+}
+
 // Dump the IR
 void slim::IR::dumpIR()
 {
@@ -334,7 +347,7 @@ void slim::IR::dumpIR()
         }
 
         // Print the basic block name
-        llvm::outs() << "Basic block : " << basic_block->getName() << " (Predecessors: ";
+        llvm::outs() << "Basic block " << this->getBasicBlockId(basic_block) << ": " << basic_block->getName() << " (Predecessors: ";
         llvm::outs() << "[";
 
         // Print the names of predecessor basic blocks
@@ -357,7 +370,7 @@ void slim::IR::dumpIR()
             {
                 llvm::outs() << "[" << instruction->getSourceLineNumber() << "] ";    
             }
-            
+
             instruction->printInstruction();
         }
 

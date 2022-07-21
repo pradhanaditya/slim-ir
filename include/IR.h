@@ -10,6 +10,8 @@ class IR
 {
 protected:
     static long long total_instructions;
+    static long long total_basic_blocks;
+    std::unordered_map<llvm::BasicBlock *, long long> basic_block_to_id;
 
 public:
     std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> func_bb_to_inst_id;
@@ -36,6 +38,9 @@ public:
     // Get SLIM instruction from the instruction index
     BaseInstruction * getInstrFromIndex(long long index);
     
+    // Get basic block id
+    long long getBasicBlockId(llvm::BasicBlock *basic_block);
+
     // Dump the IR
     void dumpIR();
 };
