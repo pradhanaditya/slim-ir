@@ -1,4 +1,14 @@
+cmake_minimum_required(VERSION 3.16)
+PROJECT(slim)
+
+set(ENV{LLVM_DIR} /usr/lib/llvm-14/lib/cmake/llvm)
+
 include_directories(include)
+
+find_package(LLVM REQUIRED CONFIG)
+add_definitions(${LLVM_DEFINITIONS})
+include_directories(${LLVM_INCLUDE_DIRS})
+link_directories(${LLVM_LIBRARY_DIRS})
 
 llvm_map_components_to_libnames(llvm_libs ${LLVM_TARGETS_TO_BUILD} all)
 

@@ -216,10 +216,10 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 {
     // Fetch the function list of the module
     llvm::SymbolTableList<llvm::Function> &function_list = module->getFunctionList();
-
+    
     // For each function in the module
     for (llvm::Function &function : function_list)
-    {
+    {    
         // For each basic block in the function
         for (llvm::BasicBlock &basic_block : function.getBasicBlockList())
         {
@@ -328,7 +328,7 @@ void slim::IR::dumpIR()
 {
     // Keeps track whether the function details have been printed or not
     std::unordered_map<llvm::Function *, bool> func_visited;
-
+    
     // Iterate over the function basic block map
     for (auto &entry : this->func_bb_to_inst_id)
     {
