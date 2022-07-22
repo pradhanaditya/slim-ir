@@ -25,7 +25,11 @@ class SLIMOperand
 {
 protected:
     llvm::Value *value;
+    
+    // Is the operand a global variable or an address-taken local variable
     bool is_global_or_address_taken;
+
+    // Is the operand a pointer variable
     bool is_pointer_variable;
 
 private:
@@ -33,14 +37,26 @@ private:
     std::string _getOperandName();
 
 public:
+    // Constructors
     SLIMOperand(llvm::Value *value);
     SLIMOperand(llvm::Value *value, bool is_global_or_address_taken);
+    
+    // Returns true if the operand is a global variable or an address-taken local variable
     bool isGlobalOrAddressTaken();
+
+    // Returns true if the operand is a pointer variable (with reference to the source program)
     bool isPointerVariable();
+
+    // Sets the is_pointer_variable to true
     void setIsPointerVariable();
+
+    // Sets the is_pointer_variable to false
     void unsetIsPointerVariable();
+
+    // Returns the pointer to the corresponding llvm::Value object 
     llvm::Value * getValue();
-    //void printOperand(llvm::raw_fd_ostream &stream);
+
+    // Prints the SLIM operand
     void printOperand(llvm::raw_ostream &stream);
 
     // --------------- APIs for the Legacy SLIM ---------------
@@ -63,6 +79,7 @@ namespace OperandRepository
     void setSLIMOperand(llvm::Value *value, SLIMOperand *slim_operand);
 };
 
+// Types of SLIM instructions
 typedef enum
 {
     ALLOCA,
@@ -113,6 +130,7 @@ typedef enum
     NOT_ASSIGNED
 } InstructionType;
 
+// Types of binary operations
 typedef enum
 {
     ADD,
@@ -128,26 +146,52 @@ typedef enum
     BITWISE_XOR
 } SLIMBinaryOperator;
 
-// Base instruction
+/*
+    BaseInstruction class
+    
+    All the SLIM Instructions should inherit this class.
+*/
 class BaseInstruction 
 {    
 protected:
+    // Type of the instruction
     InstructionType instruction_type;
+
+    // Instruction id (unique for every instruction)
     long long instruction_id;
+
+    // The corresponding LLVM instruction
     llvm::Instruction *instruction;
+
+    // Operands of the instruction
     std::vector<std::pair<SLIMOperand *, int>> operands;
+
+    // Result of the instruction
     std::pair<SLIMOperand *, int> result;
+
+    // Does this SLIM instruction correspond to any statement in the original source program
     bool has_source_line_number;
+
+    // Does this SLIM instruction involve any pointer variable (with reference to the source program)
     bool has_pointer_variables;
-    
+
     // The source program line number corresponding to this instruction
     unsigned source_line_number;
 
 public:
+    // Constructor
     BaseInstruction(llvm::Instruction *instruction);
+
+    // Sets the ID for this instruction
     void setInstructionId(long long id);
+
+    // Returns the instruction ID
     long long getInstructionId();
+
+    // Returns the instruction type
     InstructionType getInstructionType();
+
+    // Returns the corresponding LLVM instruction
     llvm::Instruction * getLLVMInstruction();
 
     // Checks whether the instruction has any relation to a statement in the source program or not
@@ -156,16 +200,21 @@ public:
     // Returns the source program line number corresponding to this instruction
     unsigned getSourceLineNumber();
 
+    // Returns true if the instruction involves any pointer variable (with reference to the source program)
     bool hasPointerVariables();
+
+    // Prints the corresponding LLVM instruction
     void printLLVMInstruction();
+
+    // Pure virtual function - every SLIM instruction class must implement this function 
     virtual void printInstruction() = 0;
 
-    // --------------- APIs for the Legacy SLIM ---------------
+    // --------------- APIs for the Legacy SLIM --------------- //
     
-    // Returns true if the instruction is a call instruction
+    // Returns true if the instruction is a CALL instruction
     bool getCall();
     
-    // Returns true if the instruction is a phi instruction
+    // Returns true if the instruction is a PHI instruction
     bool getPhi();
     
     // Return the LHS operand
@@ -173,7 +222,7 @@ public:
 
     // Return the RHS operand(s) list
     std::vector<std::pair<SLIMOperand *, int>> getRHS();
-    // --------------------------------------------------------
+    // -------------------------------------------------------- //
 };
 
 // Alloca instruction
