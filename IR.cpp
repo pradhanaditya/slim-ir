@@ -366,7 +366,10 @@ void slim::IR::dumpIR()
         for (long long instruction_id : entry.second)
         {
             BaseInstruction *instruction = inst_id_to_object[instruction_id];
-            if (instruction->hasSourceLineNumber() && instruction->getSourceLineNumber() != 0)
+
+            // Todo: Fix the source line print bug
+            if (instruction->hasSourceLineNumber() && instruction->getSourceLineNumber() != 0 
+            && instruction->getInstructionType() != InstructionType::ALLOCA)
             {
                 llvm::outs() << "[" << instruction->getSourceLineNumber() << "] ";    
             }
