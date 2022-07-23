@@ -20,7 +20,7 @@ cd build
 
 The library will be installed at the location `/usr/local/lib` and the header files will be stored at the location `/usr/local/include/slim`. These locations can be used in the parent CMakeFile of your LLVM project. A sample CMakeLists.txt file is shown below:
 
-```makefile
+```c++
 cmake_minimum_required(VERSION 3.4)
 set (CMAKE_CXX_STANDARD 14)
 project(cs-ssa)
