@@ -12,10 +12,10 @@ mkdir build
 cd build
 ```
 
-2. Run the cmake command to generate the Makefile
+2. Run the cmake command to generate the Makefile:
 `cmake -S .. -B .`
 
-3. Install the library by the following command
+3. Install the library by the command:
 `sudo make install`
 
 The library will be installed at the location `/usr/local/lib` and the header files will be stored at the location `/usr/local/include/slim`. These locations can be used in the parent CMakeFile of your LLVM project. A sample CMakeLists.txt file is shown below:
