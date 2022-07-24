@@ -406,6 +406,11 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
 // Prints the load instruction
 void LoadInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << "<";
     
     this->result.first->printOperand(llvm::outs());
@@ -548,6 +553,11 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
 
 void StoreInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << "<";
 
     this->result.first->printOperand(llvm::outs()); 
@@ -576,6 +586,11 @@ FenceInstruction::FenceInstruction(llvm::Instruction *instruction): BaseInstruct
 
 void FenceInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -657,6 +672,11 @@ llvm::Value * AtomicCompareChangeInstruction::getNewValue()
 
 void AtomicCompareChangeInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -673,6 +693,11 @@ AtomicModifyMemInstruction::AtomicModifyMemInstruction(llvm::Instruction *instru
 
 void AtomicModifyMemInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -718,6 +743,11 @@ GetElementPtrInstruction::GetElementPtrInstruction(llvm::Instruction *instructio
 
 void GetElementPtrInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     if (this->result.first->getValue())
     {
         this->result.first->printOperand(llvm::outs());
@@ -794,6 +824,11 @@ FPNegationInstruction::FPNegationInstruction(llvm::Instruction *instruction): Ba
 
 void FPNegationInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->result.first->printOperand(llvm::outs());
 
     llvm::outs() << " = ";
@@ -916,6 +951,11 @@ SLIMBinaryOperator BinaryOperation::getOperationType()
 
 void BinaryOperation::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     for (int i = 0; i < this->operands.size(); i++)
@@ -996,6 +1036,11 @@ ExtractElementInstruction::ExtractElementInstruction(llvm::Instruction *instruct
 
 void ExtractElementInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->result.first->printOperand(llvm::outs());
 
     llvm::outs() << " = ";
@@ -1046,6 +1091,11 @@ InsertElementInstruction::InsertElementInstruction(llvm::Instruction *instructio
 
 void InsertElementInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->result.first->printOperand(llvm::outs());
 
     llvm::outs() << " = ";
@@ -1097,6 +1147,11 @@ ShuffleVectorInstruction::ShuffleVectorInstruction(llvm::Instruction *instructio
 
 void ShuffleVectorInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::outs() << "shufflevector(";
@@ -1176,6 +1231,11 @@ unsigned ExtractValueInstruction::getIndex(unsigned index)
 
 void ExtractValueInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->result.first->printOperand(llvm::outs());
 
     llvm::outs() << " = ";
@@ -1226,6 +1286,11 @@ InsertValueInstruction::InsertValueInstruction(llvm::Instruction *instruction): 
 
 void InsertValueInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0_aggregate_name = this->operands[0].first->getValue();
@@ -1311,6 +1376,11 @@ llvm::Type * TruncInstruction::getResultingType()
 
 void TruncInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -1399,6 +1469,11 @@ llvm::Type * ZextInstruction::getResultingType()
 
 void ZextInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -1488,6 +1563,11 @@ llvm::Type * SextInstruction::getResultingType()
 
 void SextInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -1570,6 +1650,11 @@ llvm::Type * FPExtInstruction::getResultingType()
 
 void FPExtInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -1654,6 +1739,11 @@ llvm::Type * FPToIntInstruction::getResultingType()
 
 void FPToIntInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -1747,6 +1837,11 @@ llvm::Type * IntToFPInstruction::getResultingType()
 
 void IntToFPInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -1827,6 +1922,11 @@ llvm::Type * PtrToIntInstruction::getResultingType()
 
 void PtrToIntInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -1907,6 +2007,11 @@ llvm::Type * IntToPtrInstruction::getResultingType()
 
 void IntToPtrInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -1984,6 +2089,11 @@ llvm::Type * BitcastInstruction::getResultingType()
 
 void BitcastInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -2055,6 +2165,11 @@ AddrSpaceInstruction::AddrSpaceInstruction(llvm::Instruction *instruction): Base
 
 void AddrSpaceInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *operand_0 = this->operands[0].first->getValue();
@@ -2124,6 +2239,11 @@ CompareInstruction::CompareInstruction(llvm::Instruction *instruction): BaseInst
 
 void CompareInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
     llvm::Value *condition_operand = this->operands[0].first->getValue();
@@ -2315,6 +2435,11 @@ PhiInstruction::PhiInstruction(llvm::Instruction *instruction): BaseInstruction(
 
 void PhiInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = phi(";
 
     for (int i = 0; i < this->operands.size(); i++)
@@ -2390,6 +2515,11 @@ SelectInstruction::SelectInstruction(llvm::Instruction *instruction): BaseInstru
 
 void SelectInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::SelectInst *select_instruction;
 
     if (select_instruction = llvm::dyn_cast<llvm::SelectInst>(this->instruction))
@@ -2514,6 +2644,11 @@ FreezeInstruction::FreezeInstruction(llvm::Instruction *instruction): BaseInstru
 
 void FreezeInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << this->result.first->getValue()->getName() << " = freeze(";
 
     llvm::Value *operand = this->operands[0].first->getValue();
@@ -2620,20 +2755,32 @@ llvm::Function * CallInstruction::getCalleeFunction()
 
 void CallInstruction::printInstruction()
 {
-    if (!this->result.first->getValue()->getName().empty())
-        llvm::outs() << this->result.first->getValue()->getName() << " = call ";
-
     const std::string dbg_declare = "llvm.dbg.declare";
     const std::string dbg_value = "llvm.dbg.value";
-
+    
     // If callee_function is NULL then it is an indirect calll
     if (!this->isIndirectCall())
     {
         llvm::StringRef callee_function_name = this->callee_function->getName();
 
         if (callee_function_name.str() == (dbg_declare) || callee_function_name.str() == (dbg_value))
+        {
             return ;
+        }
+    }
 
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
+    if (!this->result.first->getValue()->getName().empty())
+        llvm::outs() << this->result.first->getValue()->getName() << " = call ";
+
+
+    // If callee_function is NULL then it is an indirect calll
+    if (!this->isIndirectCall())
+    {
         llvm::outs() << this->callee_function->getName() << "(";
     }
     else
@@ -2774,6 +2921,11 @@ VarArgInstruction::VarArgInstruction(llvm::Instruction *instruction): BaseInstru
 
 void VarArgInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -2811,6 +2963,11 @@ LandingpadInstruction::LandingpadInstruction(llvm::Instruction *instruction): Ba
 
 void LandingpadInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -2848,6 +3005,11 @@ CatchpadInstruction::CatchpadInstruction(llvm::Instruction *instruction): BaseIn
 
 void CatchpadInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -2885,6 +3047,11 @@ CleanuppadInstruction::CleanuppadInstruction(llvm::Instruction *instruction): Ba
 
 void CleanuppadInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -2923,6 +3090,11 @@ llvm::Value * ReturnInstruction::getReturnValue()
 
 void ReturnInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << "return ";
 
     llvm::Value *value = this->getReturnValue();
@@ -3038,6 +3210,11 @@ BranchInstruction::BranchInstruction(llvm::Instruction *instruction): BaseInstru
 
 void BranchInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::BranchInst *branch_inst;
 
     llvm::outs() << "branch ";
@@ -3140,6 +3317,11 @@ llvm::BasicBlock * SwitchInstruction::getDestinationOfCase(unsigned case_number)
 
 void SwitchInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::SwitchInst *switch_instruction;
 
     if (switch_instruction = llvm::dyn_cast<llvm::SwitchInst>(this->instruction))
@@ -3235,6 +3417,11 @@ llvm::BasicBlock *IndirectBranchInstruction::getPossibleDestination(unsigned ind
 
 void IndirectBranchInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << "indirect branch to " << this->getBranchAddress()->getName();
 
     llvm::outs() << " : [";
@@ -3325,6 +3512,11 @@ llvm::BasicBlock *InvokeInstruction::getExceptionDestination()
 
 void InvokeInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     if (!this->result.first->getValue()->getName().empty())
         llvm::outs() << this->result.first->getValue()->getName() << " = invoke ";
 
@@ -3513,6 +3705,11 @@ llvm::BasicBlock * CallbrInstruction::getIndirectDestination(unsigned index)
 
 void CallbrInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     if (!this->result.first->getValue()->getName().empty())
         llvm::outs() << this->result.first->getValue()->getName() << " = callbr ";
 
@@ -3592,22 +3789,6 @@ void CallbrInstruction::printInstruction()
     llvm::outs() << "]\n";
 }
 
-// Other instruction (currently not supported)
-OtherInstruction::OtherInstruction(llvm::Instruction *instruction): BaseInstruction(instruction)
-{
-    // Set the instruction type to OTHER
-    this->instruction_type = InstructionType::OTHER;
-
-    SLIMOperand *result_slim_operand = new SLIMOperand((llvm::Value *) this->instruction);
-    this->result = std::make_pair(result_slim_operand, 0);
-
-    for (int i = 0; i < this->instruction->getNumOperands(); i++)
-    {
-        SLIMOperand *temp_slim_operand = new SLIMOperand(this->instruction->getOperand(i));
-        this->operands.push_back(std::make_pair(temp_slim_operand, 0));
-    }
-}
-
 // Resume instruction - resumes propagation of an existing exception
 ResumeInstruction::ResumeInstruction(llvm::Instruction *instruction): BaseInstruction(instruction)
 {
@@ -3639,6 +3820,11 @@ ResumeInstruction::ResumeInstruction(llvm::Instruction *instruction): BaseInstru
 
 void ResumeInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     llvm::outs() << "resume ";
 
     llvm::outs() << this->operands[0].first->getValue()->getName();
@@ -3657,6 +3843,11 @@ CatchswitchInstruction::CatchswitchInstruction(llvm::Instruction *instruction): 
 
 void CatchswitchInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -3687,6 +3878,11 @@ CleanupReturnInstruction::CleanupReturnInstruction(llvm::Instruction *instructio
 
 void CleanupReturnInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
 }
 
@@ -3703,7 +3899,28 @@ UnreachableInstruction::UnreachableInstruction(llvm::Instruction *instruction): 
 
 void UnreachableInstruction::printInstruction()
 {
+    if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
+    {
+        llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
+    }
+
     this->printLLVMInstruction();
+}
+
+// Other instruction (currently not supported)
+OtherInstruction::OtherInstruction(llvm::Instruction *instruction): BaseInstruction(instruction)
+{
+    // Set the instruction type to OTHER
+    this->instruction_type = InstructionType::OTHER;
+
+    SLIMOperand *result_slim_operand = new SLIMOperand((llvm::Value *) this->instruction);
+    this->result = std::make_pair(result_slim_operand, 0);
+
+    for (int i = 0; i < this->instruction->getNumOperands(); i++)
+    {
+        SLIMOperand *temp_slim_operand = new SLIMOperand(this->instruction->getOperand(i));
+        this->operands.push_back(std::make_pair(temp_slim_operand, 0));
+    }
 }
 
 void OtherInstruction::printInstruction()
