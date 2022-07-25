@@ -37,6 +37,7 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
 
     if (value != nullptr)
     {
+        // Same argument (described in the above constructor)
         if (value->getType()->getNumContainedTypes() > 0 && value->getType()->getContainedType(0)->isPointerTy())
         {
             this->is_pointer_variable = true;
@@ -56,17 +57,19 @@ bool SLIMOperand::isPointerVariable()
     return this->is_pointer_variable;
 }
 
+// Sets the is_pointer_variable to true
 void SLIMOperand::setIsPointerVariable()
 {
     this->is_pointer_variable = true;
 }
 
+// Sets the is_pointer_variable to false
 void SLIMOperand::unsetIsPointerVariable()
 {
     this->is_pointer_variable = false;
 }
 
-// Returns the LLVM Value * object
+// Returns the pointer to the corresponding llvm::Value object
 llvm::Value* SLIMOperand::getValue()
 {
     return this->value;
@@ -77,19 +80,57 @@ std::string SLIMOperand::_getOperandName()
 {
     llvm::Value *operand = this->getValue();
 
+    // This will hold the string value of the operand
     std::string operand_name;
 
+    // The string in this stream will be flushed into the operand_name
     llvm::raw_string_ostream stream(operand_name);
     
+    // First check if the operand has a name, which won't be the case when the operand is a 
+    // GetElementPtr (GEP) operand for example, because in this case we have to extract the relevant
+    // operand and indices from the GEP operand 
     if (operand->hasName())
     {
         stream << operand->getName();
     }
     else if (llvm::isa<llvm::GEPOperator>(operand))
     {
-        llvm::Value *gep_operand = llvm::cast<llvm::GEPOperator>(operand)->getOperand(0);
+        // Cast the operand to llvm::GEPOperator
+        llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(operand);
 
+        // Get the variable operand (which is the first operand)
+        llvm::Value *gep_operand = gep_operator->getOperand(0);
+
+        // Print the variable name
         stream << gep_operand->getName();
+
+        // Print the indices
+        for (int i = 1; i < gep_operator->getNumOperands(); i++)
+        {
+            llvm::Value *index_val = gep_operator->getOperand(i);
+
+            // Check if the index is constant
+            if (llvm::isa<llvm::Constant>(index_val))
+            {
+                if (llvm::isa<llvm::ConstantInt>(index_val))
+                {
+                    llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(index_val);
+
+                    // Print the constant integer
+                    stream << "[" << constant_int->getSExtValue() << "]";
+                }
+                // If the indices are constant, they must be integers
+                else
+                {
+                    llvm_unreachable("[GetElementPtrOperator Error] The index is a constant but not an integer constant!");
+                }
+            }
+            else
+            {
+                // The index is stored in a variable or SSA register
+                stream << "[" << index_val->getName() << "]";
+            }
+        }
     }
     // else if (llvm::isa<llvm::AddrSpaceCastOperator>(operand))
     // {
@@ -2104,29 +2145,7 @@ void BitcastInstruction::printInstruction()
 
     llvm::outs() << ") ";
 
-    if (llvm::isa<llvm::Constant>(operand_0))
-    {
-        if (llvm::isa<llvm::ConstantInt>(operand_0))
-        {
-            llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(operand_0);
-
-            llvm::outs() << constant_int->getSExtValue();
-        }
-        else if (llvm::isa<llvm::ConstantFP>(operand_0))
-        {
-            llvm::ConstantFP *constant_float = llvm::cast<llvm::ConstantFP>(operand_0);
-
-            llvm::outs() << constant_float->getValueAPF().convertToFloat();
-        }
-        else
-        {
-            llvm::outs() << "[BitcastInstruction Error] Unexpected constant!\n";
-        }
-    }
-    else
-    {
-        llvm::outs() << operand_0->getName();
-    }
+    this->operands[0].first->printOperand(llvm::outs());
 
     llvm::outs() << "\n";
 }
