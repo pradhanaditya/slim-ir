@@ -3,9 +3,6 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/ADT/APFloat.h"
-#include "llvm/ADT/APSInt.h"
-#include "llvm/ADT/APInt.h"
-#include "llvm/IR/CFG.h"
 #include "llvm/IR/DebugLoc.h"
 #include "Operand.h"
 #include <vector>
