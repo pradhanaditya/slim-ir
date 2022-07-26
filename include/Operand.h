@@ -9,10 +9,38 @@
 #include <string>
 #include <map>
 
+// Types of SLIM operands
+typedef enum
+{
+    VARIABLE,
+    GEP_OPERATOR,
+    ADDR_SPACE_CAST_OPERATOR,
+    BITCAST_OPERATOR,
+    PTR_TO_INT_OPERATOR,
+    ZEXT_OPERATOR,
+    FP_MATH_OPERATOR,
+    BLOCK_ADDRESS,
+    CONSTANT_AGGREGATE,
+    CONSTANT_DATA_SEQUENTIAL,
+    CONSTANT_POINTER_NULL,
+    CONSTANT_TOKEN_NONE,
+    UNDEF_VALUE,
+    CONSTANT_INT,
+    CONSTANT_FP,
+    DSO_LOCAL_EQUIVALENT,
+    GLOBAL_VALUE,
+    NO_CFI_VALUE,
+    NOT_SUPPORTED_OPERAND
+} OperandType;
+
 // Holds operand and some other useful information
 class SLIMOperand
 {
 protected:
+    // Type of the operand
+    OperandType operand_type;
+
+    // LLVM value object corresponding to the operand
     llvm::Value *value;
     
     // Is the operand a global variable or an address-taken local variable
@@ -29,7 +57,10 @@ public:
     // Constructors
     SLIMOperand(llvm::Value *value);
     SLIMOperand(llvm::Value *value, bool is_global_or_address_taken);
-    
+
+    // Returns the operand type
+    OperandType getOperandType();
+        
     // Returns true if the operand is a global variable or an address-taken local variable
     bool isGlobalOrAddressTaken();
 
