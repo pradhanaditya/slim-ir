@@ -30,7 +30,8 @@ typedef enum
     DSO_LOCAL_EQUIVALENT,
     GLOBAL_VALUE,
     NO_CFI_VALUE,
-    NOT_SUPPORTED_OPERAND
+    NOT_SUPPORTED_OPERAND,
+    NULL_OPERAND
 } OperandType;
 
 // Holds operand and some other useful information
@@ -52,6 +53,9 @@ protected:
 private:
     // Internal function to be used only in case of print related tasks
     std::string _getOperandName();
+
+    // Internal function which returns the operand type of a llvm::Value object
+    static OperandType processOperand(llvm::Value *value);
 
 public:
     // Constructors

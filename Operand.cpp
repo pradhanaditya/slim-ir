@@ -1,5 +1,103 @@
 #include "Operand.h"
 
+OperandType SLIMOperand::processOperand(llvm::Value *value)
+{
+    // Set the operand type
+    if (value != nullptr)
+    {
+        // First check if the operand has a name, which won't be the case when the operand is a 
+        // GetElementPtr (GEP) operand for example, because in this case we have to extract the relevant
+        // operand and indices from the GEP operand.    
+        if (value->hasName())
+        {
+            return OperandType::VARIABLE;
+        }
+        else if (llvm::isa<llvm::GEPOperator>(value))
+        {
+            return OperandType::GEP_OPERATOR;
+        }
+        else if (llvm::isa<llvm::AddrSpaceCastOperator>(value))
+        {
+            return OperandType::ADDR_SPACE_CAST_OPERATOR;
+        }
+        else if (llvm::isa<llvm::BitCastOperator>(value))
+        {
+            return OperandType::BITCAST_OPERATOR;
+        }
+        else if (llvm::isa<llvm::PtrToIntOperator>(value))
+        {
+            return OperandType::PTR_TO_INT_OPERATOR;
+        }
+        else if (llvm::isa<llvm::ZExtOperator>(value))
+        {
+            return OperandType::ZEXT_OPERATOR;
+        }
+        else if (llvm::isa<llvm::FPMathOperator>(value))
+        {
+            return OperandType::FP_MATH_OPERATOR;
+        }
+        else if (llvm::isa<llvm::Constant>(value))
+        {
+            if (llvm::isa<llvm::BlockAddress>(value))
+            {
+                return OperandType::BLOCK_ADDRESS;
+            }
+            else if (llvm::isa<llvm::ConstantAggregate>(value))
+            {
+                return OperandType::CONSTANT_AGGREGATE;
+            }
+            else if (llvm::isa<llvm::ConstantDataSequential>(value))
+            {
+                return OperandType::CONSTANT_DATA_SEQUENTIAL;
+            }
+            else if (llvm::isa<llvm::ConstantPointerNull>(value))
+            {
+                return OperandType::CONSTANT_POINTER_NULL;
+            }
+            else if (llvm::isa<llvm::ConstantTokenNone>(value))
+            {
+                return OperandType::CONSTANT_TOKEN_NONE;
+            }
+            else if (llvm::isa<llvm::UndefValue>(value))
+            {
+                return OperandType::UNDEF_VALUE;
+            }
+            else if (llvm::isa<llvm::ConstantInt>(value))
+            {
+                return OperandType::CONSTANT_INT;
+            }
+            else if (llvm::isa<llvm::ConstantFP>(value))
+            {
+                return OperandType::CONSTANT_FP;
+            }
+            else if (llvm::isa<llvm::DSOLocalEquivalent>(value))
+            {
+                return OperandType::DSO_LOCAL_EQUIVALENT;
+            }
+            else if (llvm::isa<llvm::GlobalValue>(value))
+            {
+                return OperandType::GLOBAL_VALUE;
+            }
+            else if (llvm::isa<llvm::NoCFIValue>(value))
+            {
+                return OperandType::NO_CFI_VALUE;
+            }
+            else
+            {
+                return OperandType::NOT_SUPPORTED_OPERAND;
+            }
+        }
+        else
+        {
+            return OperandType::NOT_SUPPORTED_OPERAND;
+        }
+    }
+    else
+    {
+        return OperandType::NULL_OPERAND;
+    }
+}
+
 // Operand is not a address-taken local variable
 SLIMOperand::SLIMOperand(llvm::Value *value)
 {
@@ -26,96 +124,8 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
         }
     }
 
-    // Set the operand type
-    if (this->value != nullptr)
-    {
-        // First check if the operand has a name, which won't be the case when the operand is a 
-        // GetElementPtr (GEP) operand for example, because in this case we have to extract the relevant
-        // operand and indices from the GEP operand.    
-        if (this->value->hasName())
-        {
-            this->operand_type = OperandType::VARIABLE;
-        }
-        else if (llvm::isa<llvm::GEPOperator>(this->value))
-        {
-            this->operand_type = OperandType::GEP_OPERATOR;
-        }
-        else if (llvm::isa<llvm::AddrSpaceCastOperator>(this->value))
-        {
-            this->operand_type =OperandType::ADDR_SPACE_CAST_OPERATOR;
-        }
-        else if (llvm::isa<llvm::BitCastOperator>(this->value))
-        {
-            this->operand_type = OperandType::BITCAST_OPERATOR;
-        }
-        else if (llvm::isa<llvm::PtrToIntOperator>(this->value))
-        {
-            this->operand_type = OperandType::PTR_TO_INT_OPERATOR;
-        }
-        else if (llvm::isa<llvm::ZExtOperator>(this->value))
-        {
-            this->operand_type = OperandType::ZEXT_OPERATOR;
-        }
-        else if (llvm::isa<llvm::FPMathOperator>(this->value))
-        {
-            this->operand_type = OperandType::FP_MATH_OPERATOR;
-        }
-        else if (llvm::isa<llvm::Constant>(this->value))
-        {
-            if (llvm::isa<llvm::BlockAddress>(this->value))
-            {
-                this->operand_type = OperandType::BLOCK_ADDRESS;
-            }
-            else if (llvm::isa<llvm::ConstantAggregate>(this->value))
-            {
-                this->operand_type = OperandType::CONSTANT_AGGREGATE;
-            }
-            else if (llvm::isa<llvm::ConstantDataSequential>(this->value))
-            {
-                this->operand_type = OperandType::CONSTANT_DATA_SEQUENTIAL;
-            }
-            else if (llvm::isa<llvm::ConstantPointerNull>(this->value))
-            {
-                this->operand_type = OperandType::CONSTANT_POINTER_NULL;
-            }
-            else if (llvm::isa<llvm::ConstantTokenNone>(this->value))
-            {
-                this->operand_type = OperandType::CONSTANT_TOKEN_NONE;
-            }
-            else if (llvm::isa<llvm::UndefValue>(this->value))
-            {
-                this->operand_type = OperandType::UNDEF_VALUE;
-            }
-            else if (llvm::isa<llvm::ConstantInt>(this->value))
-            {
-                this->operand_type = OperandType::CONSTANT_INT;
-            }
-            else if (llvm::isa<llvm::ConstantFP>(this->value))
-            {
-                this->operand_type = OperandType::CONSTANT_FP;
-            }
-            else if (llvm::isa<llvm::DSOLocalEquivalent>(this->value))
-            {
-                this->operand_type = OperandType::DSO_LOCAL_EQUIVALENT;
-            }
-            else if (llvm::isa<llvm::GlobalValue>(this->value))
-            {
-                this->operand_type = OperandType::GLOBAL_VALUE;
-            }
-            else if (llvm::isa<llvm::NoCFIValue>(this->value))
-            {
-                this->operand_type = OperandType::NO_CFI_VALUE;
-            }
-            else
-            {
-                this->operand_type = OperandType::NOT_SUPPORTED_OPERAND;
-            }
-        }
-        else
-        {
-            this->operand_type = OperandType::NOT_SUPPORTED_OPERAND;
-        }
-    }
+    // Get the operand type
+    this->operand_type = SLIMOperand::processOperand(this->value);
 }
 
 // Operand may or may not be a address-taken local or global variable
@@ -134,6 +144,9 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
             this->is_pointer_variable = true;
         }
     }
+
+    // Get the operand type
+    this->operand_type = SLIMOperand::processOperand(this->value);
 }
 
 // Returns the operand type
