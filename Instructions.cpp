@@ -2430,7 +2430,6 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
 
         this->indirect_call = false;
         this->indirect_call_operand = NULL;
-
         
         if (!this->callee_function)
         {
@@ -2449,6 +2448,14 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
             else
             {
                 llvm_unreachable("[CallInstruction Error] This call instruction is neither a direct call not an indirect call (unexpected error)!");
+            }
+        }
+
+        if (!this->indirect_call)
+        {
+            for (auto arg = this->callee_function->arg_begin(); arg != this->callee_function->arg_end(); arg++)
+            {
+                this->formal_arguments_list.push_back(arg);
             }
         }
 

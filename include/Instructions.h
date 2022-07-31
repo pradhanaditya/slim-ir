@@ -4,6 +4,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/IR/DebugLoc.h"
+#include "llvm/IR/Argument.h"
 #include "Operand.h"
 #include <vector>
 #include <utility>
@@ -447,6 +448,7 @@ protected:
     llvm::Function *callee_function;
     SLIMOperand *indirect_call_operand;
     bool indirect_call;
+    std::vector<llvm::Argument *> formal_arguments_list;
 
 public:
     CallInstruction(llvm::Instruction *instruction);
