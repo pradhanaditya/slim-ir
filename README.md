@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
 Since this is the first beta version of SLIM, it is quite possible that the implementation has some bug(s). Please feel free to raise a pull request or send a mail to pradhanaditya@cse.iitb.ac.in in case of any issue.
 
 #### References:
-[1] https://stackoverflow.com/questions/50432967/how-to-save-the-variable-name-when-use-clang-to-generate-llvm-ir
-[2] https://stackoverflow.com/questions/46513801/llvm-opt-mem2reg-has-no-effect
-[3] https://llvm.org/docs/SourceLevelDebugging.html
-[4] https://stackoverflow.com/questions/68029581/how-to-assign-names-to-the-llvm-ir-instructions
-[5] https://llvm.org/docs/Passes.html#mem2reg-promote-memory-to-register
+1. https://stackoverflow.com/questions/50432967/how-to-save-the-variable-name-when-use-clang-to-generate-llvm-ir
+2. https://stackoverflow.com/questions/46513801/llvm-opt-mem2reg-has-no-effect
+3. https://llvm.org/docs/SourceLevelDebugging.html
+4. https://stackoverflow.com/questions/68029581/how-to-assign-names-to-the-llvm-ir-instructions
+5. https://llvm.org/docs/Passes.html#mem2reg-promote-memory-to-register
