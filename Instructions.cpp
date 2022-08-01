@@ -3200,7 +3200,7 @@ InvokeInstruction::InvokeInstruction(llvm::Instruction *instruction): BaseInstru
 
     llvm::InvokeInst *invoke_inst;
 
-    if (invoke_inst == llvm::dyn_cast<llvm::InvokeInst>(this->instruction))
+    if (invoke_inst = llvm::dyn_cast<llvm::InvokeInst>(this->instruction))
     {
         llvm::Value *result_operand = (llvm::Value *) invoke_inst;
 
