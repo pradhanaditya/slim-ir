@@ -2550,82 +2550,7 @@ void CallInstruction::printInstruction()
 
     for (int i = 0; i < this->operands.size(); i++)
     {
-        llvm::Value *operand_i = this->operands[i].first->getValue();
-
-        if (llvm::isa<llvm::Constant>(operand_i))
-        {
-            llvm::GEPOperator *gep_operator;
-
-            if (llvm::isa<llvm::ConstantInt>(operand_i))
-            {
-                llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(operand_i);
-
-                llvm::outs() << constant_int->getSExtValue();
-            }
-            else if (llvm::isa<llvm::ConstantFP>(operand_i))
-            {
-                llvm::ConstantFP *constant_float = llvm::cast<llvm::ConstantFP>(operand_i);
-
-                llvm::outs() << constant_float->getValueAPF().convertToFloat();
-            }        
-            else if (gep_operator = llvm::dyn_cast<llvm::GEPOperator>(operand_i))
-            {
-                llvm::Value *operand_i = gep_operator->getOperand(0);
-
-                llvm::outs() << operand_i->getName();
-            }
-            else if (llvm::isa<llvm::GlobalValue>(operand_i))
-            {
-                llvm::outs() << llvm::cast<llvm::GlobalValue>(operand_i)->getName();
-            }
-            // else if (isa<ConstantExpr>(operand_i))
-            // {
-            //     ConstantExpr *constant_expr = cast<ConstantExpr>(operand_i);
-
-            //     Value *const_expr_operand = constant_expr->getOperand(0);
-
-            //     if (isa<GlobalVariable>(const_expr_operand))
-            //     {
-            //         GlobalVariable *global_var = cast<GlobalVariable>(const_expr_operand);
-
-            //         Constant *const_initializer = global_var->getInitializer();
-                    
-            //         if (isa<ConstantDataArray>(const_initializer))
-            //         {
-            //             ConstantDataArray *const_data_array = cast<ConstantDataArray>(const_initializer);
-            //             std::string str = const_data_array->getAsCString().str();
-            //             str = str + "\n";
-            //             std::stringstream ss;
-            //             ss << std::quoted(str);
-            //             llvm::outs() << ss.str();
-
-            //             llvm::outs() << "\nLets use loop\n";
-
-            //             for (int i = 0; i < ss.str().length(); i++)
-            //             {
-            //                 llvm::outs() << ss.str().at(i) << " ";
-            //             }
-            //         }
-            //         else
-            //         {
-            //             llvm_unreachable("[CallInstruction Error] Not a constant data array!");
-            //         }
-            //     }
-            //     else
-            //     {
-            //         llvm_unreachable("[CallInstruction Error] Unexpected operand in constant expression!");
-            //     }
-            // }
-            else
-            {
-                //llvm_unreachable("[CallInstruction Error] Unexpected constant!\n");
-                llvm::outs() << "[CallInstruction Error] Unexpected constant!\n";
-            }
-        }
-        else
-        {
-            llvm::outs() << operand_i->getName();
-        }
+        this->operands[i].first->printOperand(llvm::outs());
 
         if (i != this->operands.size() - 1)
         {
@@ -3210,8 +3135,29 @@ InvokeInstruction::InvokeInstruction(llvm::Instruction *instruction): BaseInstru
 
         OperandRepository::setSLIMOperand(result_operand, result_slim_operand);
 
-        // Store the callee function
+        // Store the callee function (returns NULL if it is an indirect call)
         this->callee_function = invoke_inst->getCalledFunction();
+
+        if (!this->callee_function)
+        {
+            this->callee_function = llvm::dyn_cast<llvm::Function>(invoke_inst->getCalledOperand()->stripPointerCasts());    
+        }
+
+        this->indirect_call = false;
+        this->indirect_call_operand = NULL;
+
+        if (!this->callee_function)
+        {
+            this->indirect_call = true;
+            llvm::Value *called_operand = invoke_inst->getCalledOperand();
+            this->indirect_call_operand = OperandRepository::getSLIMOperand(called_operand);
+
+            if (!this->indirect_call_operand)
+            {
+                this->indirect_call_operand = new SLIMOperand(called_operand);
+                OperandRepository::setSLIMOperand(called_operand, indirect_call_operand);
+            }
+        }
 
         // Store the normal destination
         this->normal_destination = invoke_inst->getNormalDest();
@@ -3246,6 +3192,19 @@ InvokeInstruction::InvokeInstruction(llvm::Instruction *instruction): BaseInstru
     }
 }
 
+// Returns whether the call is an indirect call or not
+bool InvokeInstruction::isIndirectCall()
+{
+    return this->indirect_call;
+}
+
+// Returns a non-NULL SLIMOperand if the call is an indirect call
+SLIMOperand * InvokeInstruction::getIndirectCallOperand()
+{
+    return this->indirect_call_operand;
+}
+
+// Returns a non-NULL llvm::Function* if the call is a direct call
 llvm::Function *InvokeInstruction::getCalleeFunction()
 {
     return this->callee_function;
@@ -3263,6 +3222,20 @@ llvm::BasicBlock *InvokeInstruction::getExceptionDestination()
 
 void InvokeInstruction::printInstruction()
 {
+    const std::string dbg_declare = "llvm.dbg.declare";
+    const std::string dbg_value = "llvm.dbg.value";
+    
+    // If callee_function is NULL then it is an indirect calll
+    if (!this->isIndirectCall())
+    {
+        llvm::StringRef callee_function_name = this->callee_function->getName();
+
+        if (callee_function_name.str() == (dbg_declare) || callee_function_name.str() == (dbg_value))
+        {
+            return ;
+        }
+    }
+
     if (this->hasSourceLineNumber() && this->getSourceLineNumber() != 0)
     {
         llvm::outs() << "[" << this->getSourceLineNumber() << "] ";    
@@ -3271,94 +3244,29 @@ void InvokeInstruction::printInstruction()
     if (!this->result.first->getValue()->getName().empty())
         llvm::outs() << this->result.first->getValue()->getName() << " = invoke ";
 
-    const std::string dbg_declare = "llvm.dbg.declare";
-    const std::string dbg_value = "llvm.dbg.value";
 
-    llvm::StringRef callee_function_name = this->callee_function->getName();
+    // If callee_function is NULL then it is an indirect calll
+    if (!this->isIndirectCall())
+    {
+        llvm::outs() << this->callee_function->getName() << "(";
+    }
+    else
+    {
+        llvm::outs() << "(";
 
-    if (callee_function_name.str() == (dbg_declare) || callee_function_name.str() == (dbg_value))
-        return ;
+        this->getIndirectCallOperand()->printOperand(llvm::outs());
 
-    llvm::outs() << this->callee_function->getName() << "(";
+        llvm::outs() << ") (";
+    }
+
+    if (this->operands.empty())
+    {
+        llvm::outs() << ")\n";
+    }
 
     for (int i = 0; i < this->operands.size(); i++)
     {
-        llvm::Value *operand_i = this->operands[i].first->getValue();
-
-        if (llvm::isa<llvm::Constant>(operand_i))
-        {
-            llvm::GEPOperator *gep_operator;
-
-            if (llvm::isa<llvm::ConstantInt>(operand_i))
-            {
-                llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(operand_i);
-
-                llvm::outs() << constant_int->getSExtValue();
-            }
-            else if (llvm::isa<llvm::ConstantFP>(operand_i))
-            {
-                llvm::ConstantFP *constant_float = llvm::cast<llvm::ConstantFP>(operand_i);
-
-                llvm::outs() << constant_float->getValueAPF().convertToFloat();
-            }        
-            else if (gep_operator = llvm::dyn_cast<llvm::GEPOperator>(operand_i))
-            {
-                llvm::Value *operand_i = gep_operator->getOperand(0);
-
-                llvm::outs() << operand_i->getName();
-            }
-            else if (llvm::isa<llvm::GlobalValue>(operand_i))
-            {
-                llvm::outs() << llvm::cast<llvm::GlobalValue>(operand_i)->getName();
-            }
-            // else if (isa<ConstantExpr>(operand_i))
-            // {
-            //     ConstantExpr *constant_expr = cast<ConstantExpr>(operand_i);
-
-            //     Value *const_expr_operand = constant_expr->getOperand(0);
-
-            //     if (isa<GlobalVariable>(const_expr_operand))
-            //     {
-            //         GlobalVariable *global_var = cast<GlobalVariable>(const_expr_operand);
-
-            //         Constant *const_initializer = global_var->getInitializer();
-                    
-            //         if (isa<ConstantDataArray>(const_initializer))
-            //         {
-            //             ConstantDataArray *const_data_array = cast<ConstantDataArray>(const_initializer);
-            //             std::string str = const_data_array->getAsCString().str();
-            //             str = str + "\n";
-            //             std::stringstream ss;
-            //             ss << std::quoted(str);
-            //             llvm::outs() << ss.str();
-
-            //             llvm::outs() << "\nLets use loop\n";
-
-            //             for (int i = 0; i < ss.str().length(); i++)
-            //             {
-            //                 llvm::outs() << ss.str().at(i) << " ";
-            //             }
-            //         }
-            //         else
-            //         {
-            //             llvm_unreachable("[CallInstruction Error] Not a constant data array!");
-            //         }
-            //     }
-            //     else
-            //     {
-            //         llvm_unreachable("[CallInstruction Error] Unexpected operand in constant expression!");
-            //     }
-            // }
-            else
-            {
-                //llvm_unreachable("[CallInstruction Error] Unexpected constant!\n");
-                llvm::outs() << "[InvokeInstruction Error] Unexpected constant!\n";
-            }
-        }
-        else
-        {
-            llvm::outs() << operand_i->getName();
-        }
+        this->operands[i].first->printOperand(llvm::outs());
 
         if (i != this->operands.size() - 1)
         {
@@ -3366,7 +3274,7 @@ void InvokeInstruction::printInstruction()
         }
         else
         {
-            llvm::outs() << ")";
+            llvm::outs() << ") ";
         }
     }
 

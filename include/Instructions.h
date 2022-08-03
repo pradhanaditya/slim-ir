@@ -555,11 +555,15 @@ class InvokeInstruction: public BaseInstruction
 {
 protected:
     llvm::Function *callee_function;
+    SLIMOperand *indirect_call_operand;
+    bool indirect_call;
     llvm::BasicBlock *normal_destination;
     llvm::BasicBlock *exception_destination;
 
 public:
     InvokeInstruction(llvm::Instruction *instruction);
+    bool isIndirectCall();
+    SLIMOperand * getIndirectCallOperand();
     llvm::Function *getCalleeFunction();
     llvm::BasicBlock *getNormalDestination();
     llvm::BasicBlock *getExceptionDestination();
