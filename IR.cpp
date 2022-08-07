@@ -235,6 +235,41 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
             {
                 BaseInstruction *base_instruction = slim::processLLVMInstruction(instruction);
 
+                if (base_instruction->getInstructionType() == InstructionType::CALL)
+                {
+                    CallInstruction *call_instruction = (CallInstruction *) base_instruction;
+
+                    if (!call_instruction->isIndirectCall() && !call_instruction->getCalleeFunction()->isDeclaration())
+                    {
+                        for (unsigned arg_i = 0; arg_i < call_instruction->getNumFormalArguments(); arg_i++)
+                        {
+                            llvm::Argument *formal_argument = call_instruction->getFormalArgument(arg_i);
+                            SLIMOperand * formal_slim_argument = OperandRepository::getSLIMOperand(formal_argument);
+
+                            if (!formal_slim_argument)
+                            {
+                                formal_slim_argument = new SLIMOperand(formal_argument);
+                                OperandRepository::setSLIMOperand(formal_argument, formal_slim_argument);
+                            }
+
+                            LoadInstruction *new_load_instr = new LoadInstruction(&llvm::cast<llvm::CallInst>(instruction), formal_slim_argument, call_instruction->getOperand(arg_i).first);
+
+                            // The initial value of total instructions is 0 and it is incremented after every instruction
+                            long long instruction_id = slim::IR::total_instructions;
+
+                            // Increment the total instructions count
+                            slim::IR::total_instructions++;
+
+                            base_instruction->setInstructionId(instruction_id);
+
+                            this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
+
+                            // Map the instruction id to the corresponding SLIM instruction
+                            this->inst_id_to_object[instruction_id] = new_load_instr;
+                        }
+                    }
+                }
+
                 // The initial value of total instructions is 0 and it is incremented after every instruction
                 long long instruction_id = slim::IR::total_instructions;
 
