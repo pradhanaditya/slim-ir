@@ -68,6 +68,27 @@ bool BaseInstruction::hasPointerVariables()
     return this->has_pointer_variables;
 }
 
+// Returns the result operand
+std::pair<SLIMOperand *, int> BaseInstruction::getResultOperand()
+{
+    return this->result;
+}
+
+// Returns the number of operands
+unsigned BaseInstruction::getNumOperands()
+{
+    return this->operands.size();
+}
+
+// Returns the operand at a particular index
+std::pair<SLIMOperand *, int> BaseInstruction::getOperand(unsigned index)
+{
+    // The index should not be out-of-bounds
+    assert(index >= 0 && index < this->getNumOperands());
+
+    return this->operands[index];
+}
+
 // Prints the corresponding LLVM instruction
 void BaseInstruction::printLLVMInstruction()
 {
@@ -164,6 +185,22 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
     }
 
     if (rhs_slim_operand->isPointerVariable())
+    {
+        this->has_pointer_variables = true;
+    }
+}
+
+// Used for creating assignment statements of the formal-to-actual arguments (of a Call instruction)
+LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *result, SLIMOperand *rhs_operand): BaseInstruction(call_instruction)
+{
+    // Set the instruction type to LOAD
+    this->instruction_type = InstructionType::LOAD;
+
+    this->result = std::make_pair(result, 0);
+
+    this->operands.push_back(std::make_pair(rhs_operand, 0));
+    
+    if (rhs_operand->isPointerVariable())
     {
         this->has_pointer_variables = true;
     }
@@ -2502,6 +2539,21 @@ SLIMOperand * CallInstruction::getIndirectCallOperand()
 llvm::Function * CallInstruction::getCalleeFunction()
 {
     return this->callee_function;
+}
+
+// Returns the number of formal arguments in this call
+unsigned CallInstruction::getNumFormalArguments()
+{
+    return this->formal_arguments_list.size();
+}
+
+// Returns the formal argument at a particular index
+llvm::Argument * CallInstruction::getFormalArgument(unsigned index)
+{
+    // The index should be not be out-of-bounds
+    assert(index >= 0 && index < this->getNumFormalArguments());
+
+    return this->formal_arguments_list[index];
 }
 
 void CallInstruction::printInstruction()

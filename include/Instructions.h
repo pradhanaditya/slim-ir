@@ -142,6 +142,15 @@ public:
     // Prints the corresponding LLVM instruction
     void printLLVMInstruction();
 
+    // Returns the result operand
+    std::pair<SLIMOperand *, int> getResultOperand();
+
+    // Returns the number of operands
+    unsigned getNumOperands();
+
+    // Returns the operand at a particular index
+    std::pair<SLIMOperand *, int> getOperand(unsigned index);
+    
     // Pure virtual function - every SLIM instruction class must implement this function 
     virtual void printInstruction() = 0;
 
@@ -174,6 +183,7 @@ class LoadInstruction: public BaseInstruction
 {
 public:
     LoadInstruction(llvm::Instruction *instruction);
+    LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *result, SLIMOperand *rhs_operand);
     void printInstruction();
 };
 
@@ -455,6 +465,8 @@ public:
     bool isIndirectCall();
     SLIMOperand * getIndirectCallOperand();
     llvm::Function *getCalleeFunction();
+    unsigned getNumFormalArguments();
+    llvm::Argument * getFormalArgument(unsigned index);
     void printInstruction();
 };
 
