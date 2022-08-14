@@ -220,6 +220,16 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
     // For each function in the module
     for (llvm::Function &function : function_list)
     {    
+        // Append the pointer to the function to the "functions" list
+        if (!function.isIntrinsic() && !function.isDeclaration())
+        {
+            this->functions.push_back(&function);
+        }
+        else
+        {
+            continue ;
+        }
+
         // For each basic block in the function
         for (llvm::BasicBlock &basic_block : function.getBasicBlockList())
         {
@@ -233,6 +243,11 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
             // For each instruction in the basic block 
             for (llvm::Instruction &instruction : basic_block.getInstList())
             {
+                if (instruction.hasMetadataOtherThanDebugLoc() || instruction.isDebugOrPseudoInst())
+                {
+                    continue ;
+                }
+                
                 BaseInstruction *base_instruction = slim::processLLVMInstruction(instruction);
 
                 if (base_instruction->getInstructionType() == InstructionType::CALL)
@@ -291,6 +306,27 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 long long slim::IR::getTotalInstructions()
 {
     return slim::IR::total_instructions;
+}
+
+// Return the total number of functions in the module
+unsigned slim::IR::getNumberOfFunctions()
+{
+    return this->functions.size();
+}
+
+// Return the total number of basic blocks in the module
+long long slim::IR::getNumberOfBasicBlocks()
+{
+    return total_basic_blocks;
+}
+
+// Returns the pointer to llvm::Function for the function at the given index
+llvm::Function * slim::IR::getLLVMFunction(unsigned index)
+{
+    // Make sure that the index is not out-of-bounds
+    assert(index >= 0 && index < this->getNumberOfFunctions());
+
+    return this->functions[index];
 }
 
 // Add instructions for function-basicblock pair (used by the LegacyIR)

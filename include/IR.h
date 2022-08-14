@@ -12,6 +12,7 @@ protected:
     static long long total_instructions;
     static long long total_basic_blocks;
     std::unordered_map<llvm::BasicBlock *, long long> basic_block_to_id;
+    std::vector<llvm::Function *> functions;
 
 public:
     std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> func_bb_to_inst_id;
@@ -25,6 +26,15 @@ public:
 
     // Return the total number of instructions (across all basic blocks of all procedures)
     static long long getTotalInstructions();
+
+    // Return the total number of functions in the module
+    unsigned getNumberOfFunctions();
+
+    // Return the total number of basic blocks in the module
+    long long getNumberOfBasicBlocks();
+
+    // Returns the pointer to llvm::Function for the function at the given index
+    llvm::Function * getLLVMFunction(unsigned index);
 
     // Add instructions for function-basicblock pair (used by the LegacyIR)
     void addFuncBasicBlockInstructions(llvm::Function * function, llvm::BasicBlock * basic_block);
