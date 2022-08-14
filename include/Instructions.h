@@ -646,9 +646,3 @@ public:
     OtherInstruction(llvm::Instruction *instruction);
     void printInstruction();
 };
-
-// 1. RUN ON SPEC BENCHMARKS AND COLLECT OTHER SKIPPED INSTRUCTIONS
-// 2. I have to talk to Aditi mam regarding getelementptr and bitcast and any other complex cases and how she tested
-// 3. Prepare lit tests for instructions covered by old SLIM
-// 4. Extend lit checker for all instructions
-// 5. Test it on SLIM
