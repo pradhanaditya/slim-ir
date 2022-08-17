@@ -7,7 +7,9 @@ BaseInstruction::BaseInstruction(llvm::Instruction *instruction)
     this->instruction_type = NOT_ASSIGNED;
     this->has_pointer_variables = false;
     this->has_source_line_number = false;
-
+    this->basic_block = instruction->getParent();
+    this->function = this->basic_block->getParent();
+    
     // Set the source line number
     if (instruction->getDebugLoc())
     {
@@ -47,6 +49,24 @@ llvm::Instruction * BaseInstruction::getLLVMInstruction()
     return this->instruction;
 }
 
+// Returns the function to which this instruction belongs
+llvm::Function * BaseInstruction::getFunction()
+{
+    // The function should not be NULL
+    assert(this->function != nullptr);
+
+    return this->function;
+}
+
+// Returns the basic block to which this instruction belongs
+llvm::BasicBlock * BaseInstruction::getBasicBlock()
+{
+    // The basic block should not be NULL
+    assert(this->basic_block != nullptr);
+
+    return this->basic_block;
+}
+
 // Checks whether the instruction has any relation to a statement in the source program or not
 bool BaseInstruction::hasSourceLineNumber()
 {
@@ -60,6 +80,15 @@ unsigned BaseInstruction::getSourceLineNumber()
     assert(has_source_line_number);
 
     return this->source_line_number;
+}
+
+// Returns the source file name corresponding to this instruction (to be used only for print purposes)
+std::string BaseInstruction::getSourceFileName()
+{
+    // Check whether the instruction corresponds to a statement in the source program or not
+    assert(has_source_line_number);
+
+    return this->instruction->getDebugLoc().get()->getFilename().str();
 }
 
 // Returns whether the instruction has pointer variables or not

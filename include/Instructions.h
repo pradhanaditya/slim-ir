@@ -4,6 +4,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/IR/DebugLoc.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/Argument.h"
 #include "Operand.h"
 #include <vector>
@@ -99,6 +100,12 @@ protected:
     // The corresponding LLVM instruction
     llvm::Instruction *instruction;
 
+    // The function to which this instruction belongs
+    llvm::Function *function;
+
+    // The basic block to which this instruction belongs
+    llvm::BasicBlock *basic_block;
+
     // Operands of the instruction
     std::vector<std::pair<SLIMOperand *, int>> operands;
 
@@ -130,11 +137,20 @@ public:
     // Returns the corresponding LLVM instruction
     llvm::Instruction * getLLVMInstruction();
 
+    // Returns the function to which this instruction belongs
+    llvm::Function * getFunction();
+
+    // Returns the basic block to which this instruction belongs
+    llvm::BasicBlock * getBasicBlock();
+
     // Checks whether the instruction has any relation to a statement in the source program or not
     bool hasSourceLineNumber();
     
     // Returns the source program line number corresponding to this instruction
     unsigned getSourceLineNumber();
+
+    // Returns the source file name corresponding to this instruction (to be used only for print purposes)
+    std::string getSourceFileName();
 
     // Returns true if the instruction involves any pointer variable (with reference to the source program)
     bool hasPointerVariables();
