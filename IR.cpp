@@ -410,7 +410,7 @@ void slim::IR::dumpIR()
         // the function as visited
         if (func_visited.find(func) == func_visited.end())
         {
-            llvm::outs() << "Function: " << func->getName() << "\n";
+            llvm::outs() << "[" << func->getSubprogram()->getFilename() << "] " << "Function: " << func->getName() << "\n";
             llvm::outs() << "-------------------------------------" << "\n";          
             
             // Mark the function as visited
