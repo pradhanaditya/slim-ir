@@ -582,8 +582,12 @@ void GetElementPtrInstruction::printInstruction()
 
     if (this->result.first->getValue())
     {
+        llvm::outs() << "<";
+
         this->result.first->printOperand(llvm::outs());
 
+        llvm::outs() << ", " << this->result.second << ">";
+        
         llvm::outs() << " = ";
     }
 
@@ -591,6 +595,8 @@ void GetElementPtrInstruction::printInstruction()
 
     if (get_element_ptr = llvm::dyn_cast<llvm::GetElementPtrInst>(this->instruction))
     {
+        llvm::outs() << "<";
+
         llvm::outs() << get_element_ptr->getPointerOperand()->getName();
 
         for (int i = 1; i < get_element_ptr->getNumOperands(); i++)
@@ -616,6 +622,8 @@ void GetElementPtrInstruction::printInstruction()
             }
         }
 
+        // The indirection level (0) can be fetched from the individual indirection of indices as well
+        llvm::outs() << ", 0>";
         llvm::outs() << "\n";
     }
     else
