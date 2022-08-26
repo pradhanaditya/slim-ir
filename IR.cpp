@@ -380,6 +380,45 @@ std::map<long long, BaseInstruction *> &slim::IR::getIdToInstructionsMap()
     return this->inst_id_to_object;
 }
 
+// Returns the first instruction from the instructions list 
+BaseInstruction * slim::IR::getFirstInst()
+{
+    if (this->inst_id_to_object.empty())
+    {
+        return nullptr;
+    }
+    else
+    {
+        return this->inst_id_to_object.begin()->second;
+    }
+}
+
+// Returns the last instruction from the instructions list 
+BaseInstruction * slim::IR::getLastInst()
+{
+    if (this->inst_id_to_object.empty())
+    {
+        return nullptr;
+    }
+    else
+    {
+        return prev(this->inst_id_to_object.end())->second;
+    }
+}
+
+// Returns the reversed instruction list for a given function and a basic block
+std::list<long long> slim::IR::getReverseInstList(llvm::Function * function, llvm::BasicBlock * basic_block)
+{
+    // Make sure that the list corresponding to the function-basicblock pair exists
+    assert(this->func_bb_to_inst_id.find({function, basic_block}) != this->func_bb_to_inst_id.end());
+
+    std::list<long long> inst_list = this->func_bb_to_inst_id[{function, basic_block}];
+
+    inst_list.reverse();
+
+    return inst_list;
+}
+
 // Get SLIM instruction from the instruction index
 BaseInstruction * slim::IR::getInstrFromIndex(long long index)
 {
