@@ -528,6 +528,7 @@ protected:
 
 public:
     ReturnInstruction(llvm::Instruction *instruction);
+    SLIMOperand *getReturnOperand();
     llvm::Value *getReturnValue();
     void printInstruction();
 };

@@ -2848,6 +2848,12 @@ ReturnInstruction::ReturnInstruction(llvm::Instruction *instruction): BaseInstru
     }
 }
 
+// Returns the SLIMOperand
+SLIMOperand * ReturnInstruction::getReturnOperand()
+{
+    return this->return_value;
+}
+
 llvm::Value * ReturnInstruction::getReturnValue()
 {
     return this->return_value->getValue();
