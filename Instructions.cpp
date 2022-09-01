@@ -2854,6 +2854,7 @@ SLIMOperand * ReturnInstruction::getReturnOperand()
     return this->return_value;
 }
 
+// Returns the Value * return operand
 llvm::Value * ReturnInstruction::getReturnValue()
 {
     return this->return_value->getValue();
