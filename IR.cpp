@@ -380,30 +380,26 @@ std::map<long long, BaseInstruction *> &slim::IR::getIdToInstructionsMap()
     return this->inst_id_to_object;
 }
 
-// Returns the first instruction from the instructions list 
-BaseInstruction * slim::IR::getFirstInst()
+// Returns the first instruction id in the instruction list of the given function-basicblock pair
+long long slim::IR::getFirstIns(llvm::Function* function, llvm::BasicBlock* basic_block)
 {
-    if (this->inst_id_to_object.empty())
-    {
-        return nullptr;
-    }
-    else
-    {
-        return this->inst_id_to_object.begin()->second;
-    }
+    // Make sure that the list corresponding to the function-basicblock pair exists
+    assert(this->func_bb_to_inst_id.find({function, basic_block}) != this->func_bb_to_inst_id.end());
+
+    auto result = func_bb_to_inst_id.find({function, basic_block});
+    
+    return result->second.front();
 }
 
-// Returns the last instruction from the instructions list 
-BaseInstruction * slim::IR::getLastInst()
+// Returns the last instruction id in the instruction list of the given function-basicblock pair 
+long long slim::IR::getLastIns(llvm::Function* function, llvm::BasicBlock* basic_block)
 {
-    if (this->inst_id_to_object.empty())
-    {
-        return nullptr;
-    }
-    else
-    {
-        return prev(this->inst_id_to_object.end())->second;
-    }
+    // Make sure that the list corresponding to the function-basicblock pair exists
+    assert(this->func_bb_to_inst_id.find({function, basic_block}) != this->func_bb_to_inst_id.end());
+
+    auto result = func_bb_to_inst_id.find({function, basic_block});
+    
+    return result->second.back();
 }
 
 // Returns the reversed instruction list for a given function and a basic block
@@ -416,6 +412,13 @@ std::list<long long> slim::IR::getReverseInstList(llvm::Function * function, llv
 
     inst_list.reverse();
 
+    return inst_list;
+}
+
+// Returns the reversed instruction list (for the list passed as an argument)
+std::list<long long> slim::IR::getReverseInstList(std::list<long long> inst_list)
+{
+    inst_list.reverse();
     return inst_list;
 }
 

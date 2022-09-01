@@ -45,14 +45,17 @@ public:
     // Get the instruction id to SLIM instruction map (required by the LegacyIR)
     std::map<long long, BaseInstruction *> &getIdToInstructionsMap();
 
-    // Returns the first instruction from the instructions list 
-    BaseInstruction * getFirstInst();
+    // Returns the first instruction id in the instruction list of the given function-basicblock pair
+    long long getFirstIns(llvm::Function* function, llvm::BasicBlock* basic_block);
 
-    // Returns the last instruction from the instructions list 
-    BaseInstruction * getLastInst();
+    // Returns the last instruction id in the instruction list of the given function-basicblock pair 
+    long long getLastIns(llvm::Function* function, llvm::BasicBlock* basic_block);
 
     // Returns the reversed instruction list for a given function and a basic block
     std::list<long long> getReverseInstList(llvm::Function * function, llvm::BasicBlock * basic_block);
+
+    // Returns the reversed instruction list (for the list passed as an argument)
+    std::list<long long> getReverseInstList(std::list<long long> inst_list);
 
     // Get SLIM instruction from the instruction index
     BaseInstruction * getInstrFromIndex(long long index);
