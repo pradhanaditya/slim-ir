@@ -287,7 +287,7 @@ unsigned SLIMOperand::getNumIndices()
 SLIMOperand * SLIMOperand::getIndexOperand(unsigned position)
 {
     // Check if the indices exist and the position (0-based) is in bounds or not
-    assert(this->has_indices && position < this->getNumIndices());
+    assert(this->has_indices && position >= 0 && position < this->getNumIndices());
 
     // Return the index operand
     return this->indices[position];
