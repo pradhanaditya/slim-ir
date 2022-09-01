@@ -247,6 +247,12 @@ bool SLIMOperand::isGlobalOrAddressTaken()
     return this->is_global_or_address_taken;
 }
 
+// Returns true if the operand is a pointer variable (with reference to the LLVM IR)
+bool SLIMOperand::isPointerInLLVM()
+{
+    return this->value->getType()->isPointerTy();
+}
+
 // Returns true if the operand is a pointer variable
 bool SLIMOperand::isPointerVariable()
 {

@@ -77,6 +77,9 @@ public:
     // Returns true if the operand is a global variable or an address-taken local variable
     bool isGlobalOrAddressTaken();
 
+    // Returns true if the operand is a pointer variable (with reference to the LLVM IR)
+    bool isPointerInLLVM();
+    
     // Returns true if the operand is a pointer variable (with reference to the source program)
     bool isPointerVariable();
 
