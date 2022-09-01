@@ -566,11 +566,60 @@ GetElementPtrInstruction::GetElementPtrInstruction(llvm::Instruction *instructio
             // 0 represents that either it is a constant or the indirection level is not relevant
             this->operands.push_back(std::make_pair(slim_operand_i, 0));
         }   
+
+        SLIMOperand * gep_main_slim_operand = new SLIMOperand(get_element_ptr->getPointerOperand());
+
+        this->gep_main_operand = gep_main_slim_operand;
+
+        // Create and store the index operands into the indices list
+        for (int i = 1; i < get_element_ptr->getNumOperands(); i++)
+        {
+            llvm::Value *index_val = get_element_ptr->getOperand(i);
+
+            if (llvm::isa<llvm::Constant>(index_val))
+            {
+                if (llvm::isa<llvm::ConstantInt>(index_val))
+                {
+                    SLIMOperand *index_slim_operand = new SLIMOperand(index_val);
+                    this->indices.push_back(index_slim_operand);
+                }
+                else
+                {
+                    llvm_unreachable("[GetElementPtrInstruction Error] The index is a constant but not an integer constant!");
+                }
+            }
+            else
+            {
+                SLIMOperand *index_slim_operand = new SLIMOperand(index_val);
+                this->indices.push_back(index_slim_operand);
+            }
+        }
     }
     else
     {
         llvm_unreachable("[GetElementPtrInstruction Error] The underlying LLVM instruction is not a getelementptr instruction!");
     }
+}
+
+// Returns the main operand (corresponding to the aggregate name)
+SLIMOperand * GetElementPtrInstruction::getMainOperand()
+{
+    return this->gep_main_operand;
+}
+
+// Returns the number of index operands
+unsigned GetElementPtrInstruction::getNumIndexOperands()
+{
+    return this->indices.size();
+}
+
+// Returns the operand corresponding to the index at the given position (0-based)
+SLIMOperand * GetElementPtrInstruction::getIndexOperand(unsigned position)
+{
+    // Make sure that the position is in bounds
+    assert(position >= 0 && position < this->getNumIndexOperands());
+
+    return this->indices[position];
 }
 
 void GetElementPtrInstruction::printInstruction()

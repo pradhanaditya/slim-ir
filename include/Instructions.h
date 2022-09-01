@@ -246,8 +246,21 @@ public:
 // Getelementptr instruction
 class GetElementPtrInstruction: public BaseInstruction
 {
+    SLIMOperand * gep_main_operand;
+    std::vector<SLIMOperand *> indices;
+
 public:
     GetElementPtrInstruction(llvm::Instruction *instruction);   
+    
+    // Returns the main operand (corresponding to the aggregate name)
+    SLIMOperand * getMainOperand();
+
+    // Returns the number of index operands
+    unsigned getNumIndexOperands();
+    
+    // Returns the operand corresponding to the index at the given position (0-based)
+    SLIMOperand * getIndexOperand(unsigned position);
+
     void printInstruction();
 };
 
