@@ -104,6 +104,8 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
     this->value = value;
     this->is_global_or_address_taken = false;
     this->is_pointer_variable = false;
+    this->gep_main_operand = nullptr;
+    this->has_indices = false;
 
     if (value != nullptr)
     {
@@ -126,6 +128,47 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
 
     // Get the operand type
     this->operand_type = SLIMOperand::processOperand(this->value);
+
+    // Check if the operand is a GEPOperator
+    if (this->operand_type == OperandType::GEP_OPERATOR)
+    {
+        // Cast the operand to llvm::GEPOperator
+        llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
+
+        // Get the variable operand (which is the first operand)
+        this->gep_main_operand = gep_operator->getOperand(0);
+
+        if (gep_operator->getNumOperands() > 0)
+        {
+            this->has_indices = true;
+        }
+
+        for (int i = 1; i < gep_operator->getNumOperands(); i++)
+        {
+            llvm::Value *index_val = gep_operator->getOperand(i);
+
+            // Check if the index is constant
+            if (llvm::isa<llvm::Constant>(index_val))
+            {
+                if (llvm::isa<llvm::ConstantInt>(index_val))
+                {
+                    SLIMOperand * index_operand = new SLIMOperand(index_val);
+
+                    this->indices.push_back(index_operand);
+                }
+                // If the indices are constant, they must be integers
+                else
+                {
+                    llvm_unreachable("[SLIMOperand error while construction of GEPOperator] The index is a constant but not an integer constant!");
+                }
+            }
+            else
+            {
+                // The index is stored in a variable or SSA register
+                llvm_unreachable("[SLIMOperand error while construction of GEPOperator] The index is not a constant!");
+            }
+        }        
+    }
 }
 
 // Operand may or may not be a address-taken local or global variable
@@ -135,6 +178,8 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
     this->is_global_or_address_taken = is_global_or_address_taken;
 
     this->is_pointer_variable = false;
+    this->gep_main_operand = nullptr;
+    this->has_indices = false;
 
     if (value != nullptr)
     {
@@ -147,6 +192,47 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
 
     // Get the operand type
     this->operand_type = SLIMOperand::processOperand(this->value);
+
+    // Check if the operand is a GEPOperator
+    if (this->operand_type == OperandType::GEP_OPERATOR)
+    {
+        // Cast the operand to llvm::GEPOperator
+        llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
+
+        // Get the variable operand (which is the first operand)
+        this->gep_main_operand = gep_operator->getOperand(0);
+
+        if (gep_operator->getNumOperands() > 0)
+        {
+            this->has_indices = true;
+        }
+
+        for (int i = 1; i < gep_operator->getNumOperands(); i++)
+        {
+            llvm::Value *index_val = gep_operator->getOperand(i);
+
+            // Check if the index is constant
+            if (llvm::isa<llvm::Constant>(index_val))
+            {
+                if (llvm::isa<llvm::ConstantInt>(index_val))
+                {
+                    SLIMOperand * index_operand = new SLIMOperand(index_val);
+
+                    this->indices.push_back(index_operand);
+                }
+                // If the indices are constant, they must be integers
+                else
+                {
+                    llvm_unreachable("[SLIMOperand error while construction of GEPOperator] The index is a constant but not an integer constant!");
+                }
+            }
+            else
+            {
+                // The index is stored in a variable or SSA register
+                llvm_unreachable("[SLIMOperand error while construction of GEPOperator] The index is not a constant!");
+            }
+        }        
+    }
 }
 
 // Returns the operand type
@@ -183,6 +269,22 @@ void SLIMOperand::unsetIsPointerVariable()
 llvm::Value* SLIMOperand::getValue()
 {
     return this->value;
+}
+
+// Returns the number of indices
+unsigned SLIMOperand::getNumIndices()
+{
+    return this->indices.size();
+}
+
+ // Returns the operand index at the specified position (0-based position)
+SLIMOperand * SLIMOperand::getIndexOperand(unsigned position)
+{
+    // Check if the indices exist and the position (0-based) is in bounds or not
+    assert(this->has_indices && position < this->getNumIndices());
+
+    // Return the index operand
+    return this->indices[position];
 }
 
 // Internal function to be used only in case of print related tasks

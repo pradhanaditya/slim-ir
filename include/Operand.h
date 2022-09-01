@@ -44,11 +44,20 @@ protected:
     // LLVM value object corresponding to the operand
     llvm::Value *value;
     
+    // llvm::Value * of the main aggregate (if the operand is a GEPOperator)
+    llvm::Value *gep_main_operand;
+
     // Is the operand a global variable or an address-taken local variable
     bool is_global_or_address_taken;
 
     // Is the operand a pointer variable
     bool is_pointer_variable;
+
+    // Does the operand contain indices
+    bool has_indices;
+
+    // Contains the llvm::Value * object corresponding to the indices present in the operand
+    std::vector<SLIMOperand *> indices;
 
 private:
     // Internal function to be used only in case of print related tasks
@@ -79,6 +88,12 @@ public:
 
     // Returns the pointer to the corresponding llvm::Value object 
     llvm::Value * getValue();
+
+    // Returns the number of indices
+    unsigned getNumIndices();
+
+    // Returns the operand index at the specified position (0-based position)
+    SLIMOperand * getIndexOperand(unsigned position);
 
     // Prints the SLIM operand
     void printOperand(llvm::raw_ostream &stream);
