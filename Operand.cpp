@@ -8,11 +8,7 @@ OperandType SLIMOperand::processOperand(llvm::Value *value)
         // First check if the operand has a name, which won't be the case when the operand is a 
         // GetElementPtr (GEP) operand for example, because in this case we have to extract the relevant
         // operand and indices from the GEP operand.    
-        if (value->hasName())
-        {
-            return OperandType::VARIABLE;
-        }
-        else if (llvm::isa<llvm::GEPOperator>(value))
+        if (llvm::isa<llvm::GEPOperator>(value))
         {
             return OperandType::GEP_OPERATOR;
         }
@@ -87,6 +83,10 @@ OperandType SLIMOperand::processOperand(llvm::Value *value)
                 return OperandType::NOT_SUPPORTED_OPERAND;
             }
         }
+        else if (value->hasName())
+        {
+            return OperandType::VARIABLE;
+        }
         else
         {
             return OperandType::NOT_SUPPORTED_OPERAND;
@@ -106,6 +106,7 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
     this->is_pointer_variable = false;
     this->gep_main_operand = nullptr;
     this->has_indices = false;
+    this->has_name = false;
 
     if (value != nullptr)
     {
@@ -124,13 +125,18 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
         {
             this->is_pointer_variable = true;
         }
+
+        if (value->hasName())
+        {
+            this->has_name = true;
+        }
     }
 
     // Get the operand type
     this->operand_type = SLIMOperand::processOperand(this->value);
 
-    // Check if the operand is a GEPOperator
-    if (this->operand_type == OperandType::GEP_OPERATOR)
+    // Check if the operand is a GEPOperator and the operand does not have a name
+    if (this->operand_type == OperandType::GEP_OPERATOR && !(this->has_name))
     {
         // Cast the operand to llvm::GEPOperator
         llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
@@ -180,6 +186,7 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
     this->is_pointer_variable = false;
     this->gep_main_operand = nullptr;
     this->has_indices = false;
+    this->has_name = false;
 
     if (value != nullptr)
     {
@@ -188,13 +195,18 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
         {
             this->is_pointer_variable = true;
         }
+
+        if (value->hasName())
+        {
+            this->has_name = true;
+        }
     }
 
     // Get the operand type
     this->operand_type = SLIMOperand::processOperand(this->value);
 
-    // Check if the operand is a GEPOperator
-    if (this->operand_type == OperandType::GEP_OPERATOR)
+    // Check if the operand is a GEPOperator and the operand does not have a name
+    if (this->operand_type == OperandType::GEP_OPERATOR && !(this->has_name))
     {
         // Cast the operand to llvm::GEPOperator
         llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
@@ -281,6 +293,12 @@ llvm::Value* SLIMOperand::getValue()
 unsigned SLIMOperand::getNumIndices()
 {
     return this->indices.size();
+}
+
+// Returns if the operand has a name
+bool SLIMOperand::hasName()
+{
+    return this->has_name;
 }
 
  // Returns the operand index at the specified position (0-based position)

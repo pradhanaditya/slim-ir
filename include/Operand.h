@@ -56,6 +56,9 @@ protected:
     // Does the operand contain indices
     bool has_indices;
 
+    // Does the operand have a name
+    bool has_name;
+
     // Contains the llvm::Value * object corresponding to the indices present in the operand
     std::vector<SLIMOperand *> indices;
 
@@ -95,6 +98,9 @@ public:
     // Returns the number of indices
     unsigned getNumIndices();
 
+    // Does the operand have a name
+    bool hasName();
+    
     // Returns the operand index at the specified position (0-based position)
     SLIMOperand * getIndexOperand(unsigned position);
 
