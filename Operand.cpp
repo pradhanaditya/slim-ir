@@ -136,7 +136,7 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
     this->operand_type = SLIMOperand::processOperand(this->value);
 
     // Check if the operand is a GEPOperator and the operand does not have a name
-    if (this->operand_type == OperandType::GEP_OPERATOR && !(this->has_name))
+    if (this->operand_type == OperandType::GEP_OPERATOR)
     {
         // Cast the operand to llvm::GEPOperator
         llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
@@ -167,6 +167,12 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
                 {
                     llvm_unreachable("[SLIMOperand error while construction of GEPOperator] The index is a constant but not an integer constant!");
                 }
+            }
+            else if (index_val->hasName())
+            {
+                SLIMOperand *index_operand = new SLIMOperand(index_val);
+
+                this->indices.push_back(index_operand);
             }
             else
             {
@@ -206,7 +212,7 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
     this->operand_type = SLIMOperand::processOperand(this->value);
 
     // Check if the operand is a GEPOperator and the operand does not have a name
-    if (this->operand_type == OperandType::GEP_OPERATOR && !(this->has_name))
+    if (this->operand_type == OperandType::GEP_OPERATOR)
     {
         // Cast the operand to llvm::GEPOperator
         llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
@@ -237,6 +243,12 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
                 {
                     llvm_unreachable("[SLIMOperand error while construction of GEPOperator] The index is a constant but not an integer constant!");
                 }
+            }
+            else if (index_val->hasName())
+            {
+                SLIMOperand *index_operand = new SLIMOperand(index_val);
+
+                this->indices.push_back(index_operand);
             }
             else
             {
