@@ -327,7 +327,7 @@ SLIMOperand * SLIMOperand::getIndexOperand(unsigned position)
 std::string SLIMOperand::_getOperandName()
 {
     llvm::Value *operand = this->getValue();
-
+    
     // This will hold the string value of the operand
     std::string operand_name;
 
@@ -463,8 +463,13 @@ std::string SLIMOperand::_getOperandName()
         {
             llvm_unreachable("[SLIMOperand Error] The print function does not support NoCFIValue!");
         }
+        else if (llvm::isa<llvm::ConstantExpr>(operand))
+        {
+            stream << llvm::cast<llvm::ConstantExpr>(operand)->getName();
+        }
         else
         {
+            operand->print(llvm::errs());
             llvm_unreachable("[SLIMOperand Error] Unexpected constant!");
         }
     }
