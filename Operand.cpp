@@ -323,6 +323,13 @@ SLIMOperand * SLIMOperand::getIndexOperand(unsigned position)
     return this->indices[position];
 }
 
+void SLIMOperand::addIndexOperand(SLIMOperand * indOperand)
+{
+    //Add new index operand to indices
+    this->has_indices = true;
+    this->indices.push_back(indOperand);
+}
+
 // Internal function to be used only in case of print related tasks
 std::string SLIMOperand::_getOperandName()
 {

@@ -104,6 +104,8 @@ public:
     // Returns the operand index at the specified position (0-based position)
     SLIMOperand * getIndexOperand(unsigned position);
 
+    void addIndexOperand(SLIMOperand *indOperand);
+
     // Prints the SLIM operand
     void printOperand(llvm::raw_ostream &stream);
 

@@ -487,6 +487,98 @@ void slim::IR::dumpIR()
     }
 }
 
+
+void slim::IR::generateIR(std::unique_ptr<llvm::Module> &module){
+
+    // Fetch the function list of the module
+    llvm::SymbolTableList<llvm::Function> &function_list = module->getFunctionList();
+    
+    // For each function in the module
+    for (llvm::Function &function : function_list)
+    {    
+        // Append the pointer to the function to the "functions" list
+        if (!function.isIntrinsic() && !function.isDeclaration())
+        {
+            this->functions.push_back(&function);
+        }
+        else
+        {
+            continue ;
+        }
+
+        // For each basic block in the function
+        for (llvm::BasicBlock &basic_block : function.getBasicBlockList())
+        {
+            // Create function-basicblock pair
+            std::pair<llvm::Function *, llvm::BasicBlock *> func_basic_block{&function, &basic_block};
+
+            this->basic_block_to_id[&basic_block] = slim::IR::total_basic_blocks;
+
+            slim::IR::total_basic_blocks++;
+
+            // For each instruction in the basic block 
+            for (llvm::Instruction &instruction : basic_block.getInstList())
+            {
+                if (instruction.hasMetadataOtherThanDebugLoc() || instruction.isDebugOrPseudoInst())
+                {
+                    continue ;
+                }
+                
+                BaseInstruction *base_instruction = slim::processLLVMInstruction(instruction);
+
+                if (base_instruction->getInstructionType() == InstructionType::CALL)
+                {
+                    CallInstruction *call_instruction = (CallInstruction *) base_instruction;
+
+                    if (!call_instruction->isIndirectCall() && !call_instruction->getCalleeFunction()->isDeclaration())
+                    {
+                        for (unsigned arg_i = 0; arg_i < call_instruction->getNumFormalArguments(); arg_i++)
+                        {
+                            llvm::Argument *formal_argument = call_instruction->getFormalArgument(arg_i);
+                            SLIMOperand * formal_slim_argument = OperandRepository::getSLIMOperand(formal_argument);
+
+                            if (!formal_slim_argument)
+                            {
+                                formal_slim_argument = new SLIMOperand(formal_argument);
+                                OperandRepository::setSLIMOperand(formal_argument, formal_slim_argument);
+                            }
+
+                            LoadInstruction *new_load_instr = new LoadInstruction(&llvm::cast<llvm::CallInst>(instruction), formal_slim_argument, call_instruction->getOperand(arg_i).first);
+
+                            // The initial value of total instructions is 0 and it is incremented after every instruction
+                            long long instruction_id = slim::IR::total_instructions;
+
+                            // Increment the total instructions count
+                            slim::IR::total_instructions++;
+
+                            base_instruction->setInstructionId(instruction_id);
+
+                            this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
+
+                            // Map the instruction id to the corresponding SLIM instruction
+                            this->inst_id_to_object[instruction_id] = new_load_instr;
+                        }
+                    }
+                }
+
+                // The initial value of total instructions is 0 and it is incremented after every instruction
+                long long instruction_id = slim::IR::total_instructions;
+
+                // Increment the total instructions count
+                slim::IR::total_instructions++;
+
+                base_instruction->setInstructionId(instruction_id);
+
+                this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
+
+                // Map the instruction id to the corresponding SLIM instruction
+                this->inst_id_to_object[instruction_id] = base_instruction;
+            }
+        }
+    }
+}
+
+
 // Provides APIs similar to the older implementation of SLIM in order to support the implementations
 // that are built using the older SLIM as a base 
 slim::LegacyIR::LegacyIR()
