@@ -24,6 +24,9 @@ public:
     // Construct the SLIM IR from module
     IR(std::unique_ptr<llvm::Module> &module);
 
+    // Returns the LLVM module
+    std::unique_ptr<llvm::Module> & getLLVMModule();
+
     // Return the total number of instructions (across all basic blocks of all procedures)
     static long long getTotalInstructions();
 

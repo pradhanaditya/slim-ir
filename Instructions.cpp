@@ -9,7 +9,10 @@ BaseInstruction::BaseInstruction(llvm::Instruction *instruction)
     this->has_source_line_number = false;
     this->basic_block = instruction->getParent();
     this->function = this->basic_block->getParent();
-    
+    this->is_constant_assignment = false;
+    this->is_expression_assignment = false;
+    this->is_input_statement = false;    
+
     // Set the source line number
     if (instruction->getDebugLoc())
     {
@@ -65,6 +68,24 @@ llvm::BasicBlock * BaseInstruction::getBasicBlock()
     assert(this->basic_block != nullptr);
 
     return this->basic_block;
+}
+
+// Returns true if the instruction is an input statement
+bool BaseInstruction::isInputStatement()
+{
+    return this->is_input_statement;
+}
+
+// Returns true if the instruction is a constant assignment
+bool BaseInstruction::isConstantAssignment()
+{
+    return this->is_constant_assignment;
+}
+
+// Returns true if the instruction is an expression assignment;
+bool BaseInstruction::isExpressionAssignment()
+{
+    return this->is_expression_assignment;
 }
 
 // Checks whether the instruction has any relation to a statement in the source program or not
@@ -192,7 +213,7 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
     {
         // This means the variable is surely not an address-taken local variable (otherwise it would
         // be already present in the map because of alloca instruction)
-        if (llvm::isa<llvm::GlobalVariable>(rhs_operand))
+        if (llvm::isa<llvm::GlobalValue>(rhs_operand))
         {
             rhs_slim_operand = new SLIMOperand(rhs_operand, true);
         }
@@ -213,7 +234,7 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
         this->operands.push_back(std::make_pair(rhs_slim_operand, 2));
     }
 
-    if (rhs_slim_operand->isPointerVariable())
+    if (result_slim_operand->getValue()->getType()->isPointerTy())
     {
         this->has_pointer_variables = true;
     }
@@ -372,7 +393,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     }
 
 
-    if (llvm::isa<llvm::ConstantData>(rhs_operand))
+    if (llvm::isa<llvm::ConstantData>(rhs_operand) && !rhs_operand->getType()->isPointerTy())
     {
         this->has_pointer_variables = false;
         result_slim_operand->unsetIsPointerVariable();
