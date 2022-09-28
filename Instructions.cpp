@@ -9,7 +9,10 @@ BaseInstruction::BaseInstruction(llvm::Instruction *instruction)
     this->has_source_line_number = false;
     this->basic_block = instruction->getParent();
     this->function = this->basic_block->getParent();
-    
+    this->is_constant_assignment = false;
+    this->is_expression_assignment = false;
+    this->is_input_statement = false;    
+
     // Set the source line number
     if (instruction->getDebugLoc())
     {
@@ -65,6 +68,24 @@ llvm::BasicBlock * BaseInstruction::getBasicBlock()
     assert(this->basic_block != nullptr);
 
     return this->basic_block;
+}
+
+// Returns true if the instruction is an input statement
+bool BaseInstruction::isInputStatement()
+{
+    return this->is_input_statement;
+}
+
+// Returns true if the instruction is a constant assignment
+bool BaseInstruction::isConstantAssignment()
+{
+    return this->is_constant_assignment;
+}
+
+// Returns true if the instruction is an expression assignment;
+bool BaseInstruction::isExpressionAssignment()
+{
+    return this->is_expression_assignment;
 }
 
 // Checks whether the instruction has any relation to a statement in the source program or not
@@ -192,7 +213,7 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
     {
         // This means the variable is surely not an address-taken local variable (otherwise it would
         // be already present in the map because of alloca instruction)
-        if (llvm::isa<llvm::GlobalVariable>(rhs_operand))
+        if (llvm::isa<llvm::GlobalValue>(rhs_operand))
         {
             rhs_slim_operand = new SLIMOperand(rhs_operand, true);
         }
@@ -213,7 +234,7 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
         this->operands.push_back(std::make_pair(rhs_slim_operand, 2));
     }
 
-    if (rhs_slim_operand->isPointerVariable())
+    if (result_slim_operand->getValue()->getType()->isPointerTy())
     {
         this->has_pointer_variables = true;
     }
@@ -372,7 +393,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     }
 
 
-    if (llvm::isa<llvm::ConstantData>(rhs_operand))
+    if (llvm::isa<llvm::ConstantData>(rhs_operand) && !rhs_operand->getType()->isPointerTy())
     {
         this->has_pointer_variables = false;
         result_slim_operand->unsetIsPointerVariable();
@@ -2311,32 +2332,8 @@ void PhiInstruction::printInstruction()
 
     for (int i = 0; i < this->operands.size(); i++)
     {
-        llvm::Value *operand_i = this->operands[i].first->getValue();
-
-        if (llvm::isa<llvm::Constant>(operand_i))
-        {
-            if (llvm::isa<llvm::ConstantInt>(operand_i))
-            {
-                llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(operand_i);
-
-                llvm::outs() << constant_int->getSExtValue();
-            }
-            else if (llvm::isa<llvm::ConstantFP>(operand_i))
-            {
-                llvm::ConstantFP *constant_float = llvm::cast<llvm::ConstantFP>(operand_i);
-
-                llvm::outs() << constant_float->getValueAPF().convertToFloat();
-            }
-            else
-            {
-                llvm::outs() << "[PhiInstruction Error] Unexpected constant!\n";
-            }
-        }
-        else
-        {
-            llvm::outs() << operand_i->getName();
-        }
-
+        this->operands[i].first->printOperand(llvm::outs());
+     
         if (i != this->operands.size() - 1)
         {
             llvm::outs() << ", ";
@@ -2393,84 +2390,27 @@ void SelectInstruction::printInstruction()
     {
         // Has three operands : condition, true-operand (operand that will be assigned when the condition is true)
         // and false-operand (operand that will be assigned when the condition is false)
-        llvm::Value *condition = this->operands[0].first->getValue();
+        SLIMOperand *condition = this->operands[0].first;
 
-        llvm::Value *true_operand = this->operands[1].first->getValue();
+        SLIMOperand *true_operand = this->operands[1].first;
 
-        llvm::Value *false_operand = this->operands[2].first->getValue();
+        SLIMOperand *false_operand = this->operands[2].first;
 
         llvm::outs() << this->result.first->getValue()->getName() << " = ";
 
-        if (llvm::isa<llvm::Constant>(condition))
-        {
-            if (llvm::isa<llvm::ConstantInt>(condition))
-            {
-                llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(condition);
-
-                llvm::outs() << constant_int->getSExtValue();
-            }
-            else
-            {
-                llvm::outs() << "[SelectInstruction Error] Unexpected constant!\n";
-            }
-        }
-        else
-        {
-            llvm::outs() << condition->getName();
-        }
+        // Print the condition operand
+        condition->printOperand(llvm::outs());
 
         llvm::outs() << " ? ";
 
-        if (llvm::isa<llvm::Constant>(true_operand))
-        {
-            if (llvm::isa<llvm::ConstantInt>(true_operand))
-            {
-                llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(true_operand);
-
-                llvm::outs() << constant_int->getSExtValue();
-            }
-            else if (llvm::isa<llvm::ConstantFP>(true_operand))
-            {
-                llvm::ConstantFP *constant_float = llvm::cast<llvm::ConstantFP>(true_operand);
-
-                llvm::outs() << constant_float->getValueAPF().convertToFloat();
-            }
-            else
-            {
-                llvm::outs() << "[SelectInstruction Error] Unexpected constant!\n";
-            }
-        }
-        else
-        {
-            llvm::outs() << true_operand->getName();
-        }
+        // Print the "true" operand
+        true_operand->printOperand(llvm::outs());
 
         llvm::outs() << " : ";
 
-        if (llvm::isa<llvm::Constant>(false_operand))
-        {
-            if (llvm::isa<llvm::ConstantInt>(false_operand))
-            {
-                llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(false_operand);
-
-                llvm::outs() << constant_int->getSExtValue();
-            }
-            else if (llvm::isa<llvm::ConstantFP>(false_operand))
-            {
-                llvm::ConstantFP *constant_float = llvm::cast<llvm::ConstantFP>(false_operand);
-
-                llvm::outs() << constant_float->getValueAPF().convertToFloat();
-            }
-            else
-            {
-                llvm::outs() << "[SelectInstruction Error] Unexpected constant!\n";
-            }
-        }
-        else
-        {
-            llvm::outs() << false_operand->getName();
-        }
-
+        // Print the "false" operand
+        false_operand->printOperand(llvm::outs());
+        
         llvm::outs() << "\n";
     }
     else
@@ -2925,81 +2865,11 @@ void ReturnInstruction::printInstruction()
         llvm::outs() << "\n";
         return ;
     }
-        
-    if (llvm::isa<llvm::Constant>(value))
-    {
-        llvm::GEPOperator *gep_operator;
 
-        if (llvm::isa<llvm::ConstantInt>(value))
-        {
-            llvm::ConstantInt *constant_int = llvm::cast<llvm::ConstantInt>(value);
+    SLIMOperand *value_slim_operand = new SLIMOperand(value);
 
-            llvm::outs() << constant_int->getSExtValue();
-        }
-        else if (llvm::isa<llvm::ConstantFP>(value))
-        {
-            llvm::ConstantFP *constant_float = llvm::cast<llvm::ConstantFP>(value);
-
-            llvm::outs() << constant_float->getValueAPF().convertToFloat();
-        }        
-        else if (gep_operator = llvm::dyn_cast<llvm::GEPOperator>(value))
-        {
-            llvm::Value *operand_i = gep_operator->getOperand(0);
-
-            llvm::outs() << operand_i->getName();
-        }
-        else if (llvm::isa<llvm::GlobalValue>(value))
-        {
-            llvm::outs() << llvm::cast<llvm::GlobalValue>(value)->getName();
-        }
-        // else if (isa<ConstantExpr>(operand_i))
-        // {
-        //     ConstantExpr *constant_expr = cast<ConstantExpr>(operand_i);
-
-        //     Value *const_expr_operand = constant_expr->getOperand(0);
-
-        //     if (isa<GlobalVariable>(const_expr_operand))
-        //     {
-        //         GlobalVariable *global_var = cast<GlobalVariable>(const_expr_operand);
-
-        //         Constant *const_initializer = global_var->getInitializer();
-                
-        //         if (isa<ConstantDataArray>(const_initializer))
-        //         {
-        //             ConstantDataArray *const_data_array = cast<ConstantDataArray>(const_initializer);
-        //             std::string str = const_data_array->getAsCString().str();
-        //             str = str + "\n";
-        //             std::stringstream ss;
-        //             ss << std::quoted(str);
-        //             llvm::outs() << ss.str();
-
-        //             llvm::outs() << "\nLets use loop\n";
-
-        //             for (int i = 0; i < ss.str().length(); i++)
-        //             {
-        //                 llvm::outs() << ss.str().at(i) << " ";
-        //             }
-        //         }
-        //         else
-        //         {
-        //             llvm_unreachable("[CallInstruction Error] Not a constant data array!");
-        //         }
-        //     }
-        //     else
-        //     {
-        //         llvm_unreachable("[CallInstruction Error] Unexpected operand in constant expression!");
-        //     }
-        // }
-        else
-        {
-            //llvm_unreachable("[CallInstruction Error] Unexpected constant!\n");
-            llvm::outs() << "[ReturnInstruction Error] Unexpected constant!\n";
-        }
-    }
-    else
-    {
-        llvm::outs() << value->getName();
-    }
+    // Print the return operand
+    value_slim_operand->printOperand(llvm::outs());
 
     llvm::outs() << "\n";
 }

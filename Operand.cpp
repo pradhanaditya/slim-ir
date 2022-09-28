@@ -121,7 +121,14 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
             invalid results because that operand may or may not be a pointer.
         */
 
-        if (value->getType()->getNumContainedTypes() > 0 && value->getType()->getContainedType(0)->isPointerTy())
+        if (llvm::isa<llvm::GlobalValue>(value))
+        {
+            if (llvm::isa<llvm::PointerType>(llvm::cast<llvm::GlobalValue>(value)->getType()))
+            {
+                this->is_pointer_variable = true;
+            }
+        }
+        else if (value->getType()->getNumContainedTypes() > 0 && value->getType()->getContainedType(0)->isPointerTy())
         {
             this->is_pointer_variable = true;
         }
@@ -196,8 +203,15 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
 
     if (value != nullptr)
     {
+        if (llvm::isa<llvm::GlobalValue>(value))
+        {
+            if (llvm::isa<llvm::PointerType>(llvm::cast<llvm::GlobalValue>(value)->getType()))
+            {
+                this->is_pointer_variable = true;
+            }
+        }
         // Same argument (described in the above constructor)
-        if (value->getType()->getNumContainedTypes() > 0 && value->getType()->getContainedType(0)->isPointerTy())
+        else if (value->getType()->getNumContainedTypes() > 0 && value->getType()->getContainedType(0)->isPointerTy())
         {
             this->is_pointer_variable = true;
         }
@@ -334,7 +348,7 @@ void SLIMOperand::addIndexOperand(SLIMOperand * indOperand)
 std::string SLIMOperand::_getOperandName()
 {
     llvm::Value *operand = this->getValue();
-
+    
     // This will hold the string value of the operand
     std::string operand_name;
 
@@ -470,8 +484,13 @@ std::string SLIMOperand::_getOperandName()
         {
             llvm_unreachable("[SLIMOperand Error] The print function does not support NoCFIValue!");
         }
+        else if (llvm::isa<llvm::ConstantExpr>(operand))
+        {
+            stream << llvm::cast<llvm::ConstantExpr>(operand)->getName();
+        }
         else
         {
+            operand->print(llvm::errs());
             llvm_unreachable("[SLIMOperand Error] Unexpected constant!");
         }
     }

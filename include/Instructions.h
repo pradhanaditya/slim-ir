@@ -112,6 +112,15 @@ protected:
     // Result of the instruction
     std::pair<SLIMOperand *, int> result;
 
+    // Is the instruction an input statement
+    bool is_input_statement;
+
+    // Is the instruction a constant assignment
+    bool is_constant_assignment;
+
+    // Is the instruction an expression
+    bool is_expression_assignment;
+
     // Does this SLIM instruction correspond to any statement in the original source program
     bool has_source_line_number;
 
@@ -143,6 +152,15 @@ public:
     // Returns the basic block to which this instruction belongs
     llvm::BasicBlock * getBasicBlock();
 
+    // Returns true if the instruction is an input statement
+    bool isInputStatement();
+
+    // Returns true if the instruction is a constant assignment
+    bool isConstantAssignment();
+
+    // Returns true if the instruction is an expression assignment;
+    bool isExpressionAssignment();
+    
     // Checks whether the instruction has any relation to a statement in the source program or not
     bool hasSourceLineNumber();
     

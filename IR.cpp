@@ -275,7 +275,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                             // Increment the total instructions count
                             slim::IR::total_instructions++;
 
-                            base_instruction->setInstructionId(instruction_id);
+                            new_load_instr->setInstructionId(instruction_id);
 
                             this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
 
@@ -452,7 +452,10 @@ void slim::IR::dumpIR()
         // the function as visited
         if (func_visited.find(func) == func_visited.end())
         {
-            llvm::outs() << "[" << func->getSubprogram()->getFilename() << "] " << "Function: " << func->getName() << "\n";
+            if (func->getSubprogram())
+                llvm::outs() << "[" << func->getSubprogram()->getFilename() << "] ";
+            
+            llvm::outs() << "Function: " << func->getName() << "\n";
             llvm::outs() << "-------------------------------------" << "\n";          
             
             // Mark the function as visited
