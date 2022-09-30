@@ -290,7 +290,7 @@ bool SLIMOperand::isPointerInLLVM()
 {
     if (llvm::isa<llvm::GlobalValue>(this->value))
     {
-        if (llvm::isa<llvm::PointerType>(llvm::cast<llvm::GlobalValue>(this->value)->getType()))
+        if (llvm::isa<llvm::PointerType>(llvm::cast<llvm::GlobalValue>(this->value)->getValueType()))
         {
             return true;
         }
@@ -299,7 +299,7 @@ bool SLIMOperand::isPointerInLLVM()
             return false;
         }
     }
-    
+
     return this->value->getType()->isPointerTy();
 }
 
