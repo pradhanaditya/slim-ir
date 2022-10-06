@@ -8,6 +8,7 @@
 #include "llvm/ADT/StringRef.h"
 #include <string>
 #include <map>
+#include <set>
 
 // Types of SLIM operands
 typedef enum
@@ -80,6 +81,9 @@ public:
     // Returns true if the operand is a global variable or an address-taken local variable
     bool isGlobalOrAddressTaken();
 
+    // Returns true if the operand is a result of an alloca instruction
+    bool isAlloca();
+
     // Returns true if the operand is a pointer variable (with reference to the LLVM IR)
     bool isPointerInLLVM();
     
@@ -121,6 +125,9 @@ namespace OperandRepository
 {
     // Check whether a SLIMOperand object corresponds to a global or a address-taken local variable or not
     extern std::map<llvm::Value *, SLIMOperand *> value_to_slim_operand;
+
+    // Contains the value objects that are a result of alloca instruction
+    extern std::set<llvm::Value *> alloca_operand;
 
     // Returns the SLIMOperand object if already exists, otherwise returns a nullptr
     SLIMOperand * getSLIMOperand(llvm::Value *value);

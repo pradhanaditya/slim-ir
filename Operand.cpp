@@ -285,6 +285,12 @@ bool SLIMOperand::isGlobalOrAddressTaken()
     return this->is_global_or_address_taken;
 }
 
+// Returns true if the operand is a result of an alloca instruction
+bool SLIMOperand::isAlloca()
+{
+    return OperandRepository::alloca_operand.find(this->value) != OperandRepository::alloca_operand.end();
+}
+
 // Returns true if the operand is a pointer variable (with reference to the LLVM IR)
 bool SLIMOperand::isPointerInLLVM()
 {
@@ -544,6 +550,9 @@ namespace OperandRepository
 {
     // Check whether a SLIMOperand object corresponds to a global or a address-taken local variable or not
     std::map<llvm::Value *, SLIMOperand *> value_to_slim_operand;
+
+    // Contains the value objects that are a result of alloca instruction
+    std::set<llvm::Value *> alloca_operand;
 };
 
 SLIMOperand * OperandRepository::getSLIMOperand(llvm::Value *value)

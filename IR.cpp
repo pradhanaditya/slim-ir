@@ -1,7 +1,10 @@
 #include "IR.h"
 
-long long slim::IR::total_instructions = 0;
-long long slim::IR::total_basic_blocks = 0;
+namespace slim
+{
+    // Check if the SSA variable (created using MemorySSA) already exists or not
+    std::map<std::string, bool> is_ssa_version_available;
+}
 
 // Process the llvm instruction and return the corresponding SLIM instruction
 BaseInstruction * slim::processLLVMInstruction(llvm::Instruction &instruction)
@@ -208,15 +211,171 @@ BaseInstruction * slim::processLLVMInstruction(llvm::Instruction &instruction)
     return base_instruction;
 }
 
+// Creates different SSA versions for global and address-taken local variables using Memory SSA
+void slim::createSSAVersions(std::unique_ptr<llvm::Module> &module)
+{
+    // Fetch the function list of module
+	llvm::SymbolTableList<llvm::Function> &function_list = module->getFunctionList();
+
+	// Contains the operand object corresponding to every global SSA variable
+	std::map<std::string, llvm::Value *> ssa_variable_to_operand;
+
+	// For each function in the module
+    for (auto &function : function_list)
+    {
+        // Skip the function if it is intrinsic or is not defined in the translation unit
+        if (function.isIntrinsic() || function.isDeclaration())
+        {
+            continue ;
+        }
+
+		llvm::PassBuilder PB;
+        llvm::FunctionAnalysisManager *function_analysis_manager = new llvm::FunctionAnalysisManager();
+        
+		// Register the FunctionAnalysisManager in the pass builder
+        PB.registerFunctionAnalyses(*function_analysis_manager);
+
+		llvm::AAManager aa_manager;
+		
+		// Add the Basic Alias Analysis provided by LLVM
+		aa_manager.registerFunctionAnalysis<llvm::BasicAA>();
+		
+		auto alias_analysis = aa_manager.run(function, *function_analysis_manager);
+
+		llvm::DominatorTree *dominator_tree = &(*function_analysis_manager).getResult<llvm::DominatorTreeAnalysis>(function);
+
+		llvm::MemorySSA *memory_ssa = new llvm::MemorySSA(function, &alias_analysis, dominator_tree);
+		
+        // Get the MemorySSAWalker which will be used to query about the clobbering memory definition
+        llvm::MemorySSAWalker *memory_ssa_walker = memory_ssa->getWalker();
+
+		std::map<llvm::Value *, bool> is_operand_stack_variable;
+
+		// For each basic block in the function
+        for (llvm::BasicBlock &basic_block : function.getBasicBlockList())
+        {
+            std::vector<llvm::Instruction *> instructions;
+
+            for (llvm::Instruction &instruction : basic_block.getInstList())
+            {
+                instructions.push_back(&instruction);
+            }
+
+			// For each instruction in the basic block
+            for (llvm::Instruction *instruction_ptr : instructions)
+            {
+                llvm::Instruction &instruction = *instruction_ptr;
+                /*
+					Check if the operand is a address-taken stack variable
+					This assumes that the IR has been transformed by mem2reg. Since the only variables 
+					that are left in "alloca" form (stack variables) after mem2reg are the variables whose 
+					addresses have been taken in some form. The rest of the local variables are promoted to
+					SSA registers by mem2reg. 
+				*/
+				if (llvm::isa<llvm::AllocaInst>(instruction))
+				{
+					is_operand_stack_variable[(llvm::Value *) &instruction] = true;
+				}
+				// Check if the instruction is a load instruction
+                if (llvm::isa<llvm::LoadInst>(instruction))
+                {
+                    // Get the clobbering memory access for this load instruction
+                    llvm::MemoryAccess *clobbering_mem_access = memory_ssa_walker->getClobberingMemoryAccess(&instruction);
+	
+                    std::string ssa_variable_name = "";
+
+					// Check if this the memory access is a MemoryDef or not
+                    if (llvm::isa<llvm::MemoryDef>(clobbering_mem_access) || llvm::isa<llvm::MemoryPhi>(clobbering_mem_access))
+                    {
+						// Cast the MemoryAccess object to MemoryDef object
+                        llvm::MemoryDef *memory_def = llvm::dyn_cast<llvm::MemoryDef, llvm::MemoryAccess *>(clobbering_mem_access);
+						llvm::MemoryPhi *memory_phi = llvm::dyn_cast<llvm::MemoryPhi, llvm::MemoryAccess *>(clobbering_mem_access);
+
+						unsigned int memory_def_id;
+
+						// Get the memory definition id
+                        if (llvm::isa<llvm::MemoryDef>(clobbering_mem_access))
+						{
+							memory_def_id = memory_def->getID();
+						}
+						else
+						{
+							memory_def_id = memory_phi->getID();
+						}
+
+						// Fetch the source operand of the load instruction
+                        llvm::Value *source_operand = instruction.getOperand(0);
+
+						// Check if the source operand is a global variable
+                        if (llvm::isa<llvm::GlobalVariable>(source_operand) || is_operand_stack_variable[source_operand])
+                        {
+							// Based on the memory definition id and global or address-taken local variable name, this is the expected SSA variable name
+                            ssa_variable_name = function.getName().str() + "_" + source_operand->getName().str() + "_" + std::to_string(memory_def_id);
+
+							// Check if the SSA variable (created using MemorySSA) already exists or not
+                            if (slim::is_ssa_version_available.find(ssa_variable_name) != slim::is_ssa_version_available.end())
+                            {
+                                // If the expected SSA variable already exists, then replace the source operand with the corresponding SSA operand
+							    instruction.setOperand(0, ssa_variable_to_operand[ssa_variable_name]);
+                            }
+                            else
+                            {
+								// Fetch the basic block iterator
+								llvm::BasicBlock::iterator basicblock_iterator = basic_block.begin();
+                                
+								// Create a new load instruction which loads the value from the memory location to a temporary variable
+                                llvm::LoadInst *new_load_instr = new llvm::LoadInst(source_operand->getType(), source_operand, "tmp." + ssa_variable_name, &instruction);
+
+								// Create a new alloca instruction for the new SSA version
+                                llvm::AllocaInst *new_alloca_instr = new llvm::AllocaInst(((llvm::Value *) new_load_instr)->getType() , 0, ssa_variable_name, new_load_instr);
+                                
+								// Create a new store instruction to store the value from the new temporary to the new SSA version of global or address-taken 
+								// local variable
+                                llvm::StoreInst *new_store_instr = new llvm::StoreInst((llvm::Value *) new_load_instr, (llvm::Value *) new_alloca_instr, &instruction);
+                                
+								// Update the map accordingly
+                                slim::is_ssa_version_available[ssa_variable_name] = true;
+                                
+								// The value of a instruction corresponds to the result of that instruction 
+								ssa_variable_to_operand[ssa_variable_name] = (llvm::Value *) new_alloca_instr; 
+
+								// Replace the operand of the load instruction with the new SSA version
+                                instruction.setOperand(0, ssa_variable_to_operand[ssa_variable_name]);
+                            }
+                        }
+                    }
+                    else
+                    {
+						// This is not expected
+                        llvm_unreachable("Clobbering access is not MemoryDef, which is unexpected!");
+                    }
+				}
+            }
+        }
+    }
+}
+
 // Default constructor
-slim::IR::IR() { }
+slim::IR::IR() 
+{ 
+    this->total_basic_blocks = 0;
+    this->total_instructions = 0;
+}
 
 // Construct the SLIM IR from module
 slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 {
+    this->total_basic_blocks = 0;
+    this->total_instructions = 0;
+
+    // Create different SSA versions for globals and address-taken local variables if the MemorySSA flag is passed
+    #ifdef MemorySSAFlag
+    slim::createSSAVersions(module);
+    #endif
+
     // Fetch the function list of the module
     llvm::SymbolTableList<llvm::Function> &function_list = module->getFunctionList();
-    
+
     // For each function in the module
     for (llvm::Function &function : function_list)
     {    
@@ -236,9 +395,9 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
             // Create function-basicblock pair
             std::pair<llvm::Function *, llvm::BasicBlock *> func_basic_block{&function, &basic_block};
 
-            this->basic_block_to_id[&basic_block] = slim::IR::total_basic_blocks;
+            this->basic_block_to_id[&basic_block] = this->total_basic_blocks;
 
-            slim::IR::total_basic_blocks++;
+            this->total_basic_blocks++;
 
             // For each instruction in the basic block 
             for (llvm::Instruction &instruction : basic_block.getInstList())
@@ -273,7 +432,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                             long long instruction_id = slim::IR::total_instructions;
 
                             // Increment the total instructions count
-                            slim::IR::total_instructions++;
+                            this->total_instructions++;
 
                             new_load_instr->setInstructionId(instruction_id);
 
@@ -286,10 +445,10 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                 }
 
                 // The initial value of total instructions is 0 and it is incremented after every instruction
-                long long instruction_id = slim::IR::total_instructions;
+                long long instruction_id = this->total_instructions;
 
                 // Increment the total instructions count
-                slim::IR::total_instructions++;
+                this->total_instructions++;
 
                 base_instruction->setInstructionId(instruction_id);
 
@@ -305,7 +464,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 // Returns the total number of instructions across all the functions and basic blocks
 long long slim::IR::getTotalInstructions()
 {
-    return slim::IR::total_instructions;
+    return this->total_instructions;
 }
 
 // Return the total number of functions in the module
@@ -317,7 +476,7 @@ unsigned slim::IR::getNumberOfFunctions()
 // Return the total number of basic blocks in the module
 long long slim::IR::getNumberOfBasicBlocks()
 {
-    return total_basic_blocks;
+    return this->total_basic_blocks;
 }
 
 // Returns the pointer to llvm::Function for the function at the given index
@@ -341,10 +500,10 @@ void slim::IR::addFuncBasicBlockInstructions(llvm::Function * function, llvm::Ba
         BaseInstruction *base_instruction = slim::processLLVMInstruction(instruction);
 
         // Get the instruction id
-        long long instruction_id = slim::IR::total_instructions;
+        long long instruction_id = this->total_instructions;
 
         // Increment the total instructions count
-        slim::IR::total_instructions++;
+        this->total_instructions++;
 
         base_instruction->setInstructionId(instruction_id);
 
@@ -436,6 +595,171 @@ long long slim::IR::getBasicBlockId(llvm::BasicBlock *basic_block)
     return this->basic_block_to_id[basic_block];
 }
 
+// Optimize the IR (please use only when you are using the MemorySSAFlag)
+slim::IR * slim::IR::optimizeIR()
+{
+    // Create the new slim::IR object which would contain the IR instructions after optimization
+    slim::IR *optimized_slim_ir = new slim::IR();
+    
+	//errs() << "funcBBInsMap size: " << funcBBInsMap.size() << "\n";
+	
+	// Now, we are ready to do the load-store optimization
+	for (auto func_basicblock_instr_entry : this->func_bb_to_inst_id)
+	{
+        // Add the function-basic-block entry in optimized_slim_ir
+        optimized_slim_ir->func_bb_to_inst_id[func_basicblock_instr_entry.first] = std::list<long long>{};
+
+		std::list<long long> &instruction_list = func_basicblock_instr_entry.second;
+ 
+		//errs() << "instruction_list size: " << instruction_list.size() << "\n";
+    
+        long long temp_instr_counter = 0;
+		std::map<llvm::Value *, BaseInstruction *> temp_token_to_instruction;
+        std::map<long long, BaseInstruction *> temp_instructions;
+        std::map<BaseInstruction *, long long> temp_instruction_ids;
+
+		for (auto instruction_id : instruction_list)
+		{
+			//errs() << "Instruction id : " << instruction_id << "\n";
+            BaseInstruction *slim_instruction = this->inst_id_to_object[instruction_id];
+            
+			// Check if the corresponding LLVM instruction is a Store Instruction
+			if (slim_instruction->getInstructionType() == InstructionType::STORE && slim_instruction->getNumOperands() == 1 && slim_instruction->getResultOperand().first != nullptr)
+			{
+				// Retrieve the RHS operand of the SLIM instruction (corresponding to the LLVM IR store instruction)
+				std::pair<SLIMOperand *, int> slim_instr_rhs = slim_instruction->getOperand(0);
+
+				// Extract the value and its indirection level from slim_instr_rhs			
+				llvm::Value *slim_instr_rhs_value = slim_instr_rhs.first->getValue();
+				int token_indirection = slim_instr_rhs.second;
+
+				// Check if the RHS Value is defined in an earlier SLIM statement	
+				if (temp_token_to_instruction.find(slim_instr_rhs_value) != temp_token_to_instruction.end())
+				{
+					// Get the instruction (in the unoptimized SLIM IR)
+					BaseInstruction * value_def_instr = temp_token_to_instruction[slim_instr_rhs_value];
+                    long long value_def_index = temp_instruction_ids[value_def_instr];
+
+					// Check if the statement is a load instruction
+					bool is_load_instr = (llvm::isa<llvm::LoadInst>(value_def_instr->getLLVMInstruction()));
+
+					// Get the indirection level of the LHS operand in the load instruction
+					int map_entry_indirection = value_def_instr->getResultOperand().second;
+				
+					// Get the indirection level of the RHS operand in the load instruction
+					int map_entry_rhs_indirection = value_def_instr->getOperand(0).second;
+
+					// Adjust the indirection level
+					int distance = token_indirection - map_entry_indirection + map_entry_rhs_indirection;
+
+					// Check if the RHS is a SSA variable (created using MemorySSA)
+					bool is_rhs_global_ssa_variable = (slim::is_ssa_version_available.find(slim_instr_rhs_value->getName().str()) != slim::is_ssa_version_available.end());
+
+					// Modify the RHS operand with the new indirection level if it does not exceed 2
+					if (is_load_instr && (distance >= 0 && distance <= 2) && !is_rhs_global_ssa_variable)
+					{
+						//errs() << slim_instr_rhs.first->getName() << " = name\n";
+						
+						// Set the indirection level of the RHS operand to the adjusted indirection level
+						value_def_instr->setRHSIndirection(0, distance);
+
+						// Update the RHS operand of the store instruction
+						slim_instruction->setOperand(0, value_def_instr->getOperand(0));
+
+						// Remove the existing entries
+						temp_token_to_instruction.erase(slim_instr_rhs_value);
+                        temp_instructions.erase(value_def_index);
+                    }
+				}	
+				else
+				{
+					//errs() << "RHS is not present as LHS!\n";
+				}
+
+				// Check whether the LHS operand can be replaced
+                std::pair<SLIMOperand *, int> slim_instr_lhs = slim_instruction->getResultOperand();
+
+				// Extract the value and its indirection level from slim_instr_rhs			
+				llvm::Value *slim_instr_lhs_value = slim_instr_lhs.first->getValue();
+				token_indirection = slim_instr_lhs.second;
+
+				// Check if the LHS Value is defined in an earlier SLIM statement	
+				if (temp_token_to_instruction.find(slim_instr_lhs_value) != temp_token_to_instruction.end())
+				{
+					// Get the instruction (in the unoptimized SLIM IR)
+					BaseInstruction * value_def_instr = temp_token_to_instruction[slim_instr_lhs_value];
+					long long value_def_index = temp_instruction_ids[value_def_instr];
+
+					// Check if the statement is a load instruction
+					bool is_load_instr = (llvm::isa<llvm::LoadInst>(value_def_instr->getLLVMInstruction()));
+
+					// Get the indirection level of the LHS operand in the load instruction
+					int map_entry_indirection = value_def_instr->getResultOperand().second;
+				
+					// Get the indirection level of the RHS operand in the load instruction
+					int map_entry_rhs_indirection = value_def_instr->getOperand(0).second;
+
+					// Adjust the indirection level
+					int distance = token_indirection - map_entry_indirection + map_entry_rhs_indirection;
+
+					// Check if the RHS is a SSA variable (created using MemorySSA)
+					bool is_rhs_global_ssa_variable = (slim::is_ssa_version_available.find(slim_instr_lhs_value->getName().str()) != slim::is_ssa_version_available.end());
+
+					// Modify the RHS operand with the new indirection level if it does not exceed 2
+					if (is_load_instr && (distance >= 0 && distance <= 2) && !is_rhs_global_ssa_variable)
+					{
+						//errs() << slim_instr_rhs.first->getName() << " = name\n";
+						
+						// Set the indirection level of the RHS operand to the adjusted indirection level
+						value_def_instr->setRHSIndirection(0, distance);
+
+						// Update the result operand of the store instruction
+						slim_instruction->setResultOperand(value_def_instr->getOperand(0));
+
+						// Remove the existing entries
+						temp_token_to_instruction.erase(slim_instr_lhs_value);
+                        temp_instructions.erase(value_def_index);
+                    }
+				}
+
+				// Add the SLIM instruction (whether modified or not) 
+                if (slim_instruction->getInstructionType() == InstructionType::LOAD)
+				    temp_token_to_instruction[slim_instruction->getResultOperand().first->getValue()] = slim_instruction;
+				temp_instructions[temp_instr_counter] = slim_instruction;
+                temp_instruction_ids[slim_instruction] = temp_instr_counter;
+                temp_instr_counter++;
+			}
+			else
+			{
+				//errs() << "Size != 1\n";
+				// Add the SLIM instruction
+                // Add the SLIM instruction (whether modified or not) 
+				if (slim_instruction->getInstructionType() == InstructionType::LOAD)
+				    temp_token_to_instruction[slim_instruction->getResultOperand().first->getValue()] = slim_instruction;
+				temp_instructions[temp_instr_counter] = slim_instruction;
+                temp_instruction_ids[slim_instruction] = temp_instr_counter;
+                temp_instr_counter++;
+			}
+		}
+
+		// Now, we have the final list of optimized instructions in this basic block. So, 
+		// we insert the instructions in the optimized global instructions list and the 
+		// instruction indices (after the optimization) in the func_basic_block_optimized_instrs
+		// map
+		for (auto temp_instruction : temp_instructions)
+		{
+            temp_instruction.second->setInstructionId(optimized_slim_ir->total_instructions);
+            optimized_slim_ir->func_bb_to_inst_id[func_basicblock_instr_entry.first].push_back(optimized_slim_ir->total_instructions);
+            optimized_slim_ir->inst_id_to_object[optimized_slim_ir->total_instructions] = temp_instruction.second;
+            optimized_slim_ir->total_instructions++;
+		}
+
+        optimized_slim_ir->basic_block_to_id[func_basicblock_instr_entry.first.second] = optimized_slim_ir->total_basic_blocks++;
+	}
+
+    return optimized_slim_ir;
+}
+
 // Dump the IR
 void slim::IR::dumpIR()
 {
@@ -515,9 +839,9 @@ void slim::IR::generateIR(std::unique_ptr<llvm::Module> &module){
             // Create function-basicblock pair
             std::pair<llvm::Function *, llvm::BasicBlock *> func_basic_block{&function, &basic_block};
 
-            this->basic_block_to_id[&basic_block] = slim::IR::total_basic_blocks;
+            this->basic_block_to_id[&basic_block] = this->total_basic_blocks;
 
-            slim::IR::total_basic_blocks++;
+            this->total_basic_blocks++;
 
             // For each instruction in the basic block 
             for (llvm::Instruction &instruction : basic_block.getInstList())
@@ -549,12 +873,12 @@ void slim::IR::generateIR(std::unique_ptr<llvm::Module> &module){
                             LoadInstruction *new_load_instr = new LoadInstruction(&llvm::cast<llvm::CallInst>(instruction), formal_slim_argument, call_instruction->getOperand(arg_i).first);
 
                             // The initial value of total instructions is 0 and it is incremented after every instruction
-                            long long instruction_id = slim::IR::total_instructions;
+                            long long instruction_id = this->total_instructions;
 
                             // Increment the total instructions count
-                            slim::IR::total_instructions++;
+                            this->total_instructions++;
 
-                            base_instruction->setInstructionId(instruction_id);
+                            new_load_instr->setInstructionId(instruction_id);
 
                             this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
 
@@ -565,10 +889,10 @@ void slim::IR::generateIR(std::unique_ptr<llvm::Module> &module){
                 }
 
                 // The initial value of total instructions is 0 and it is incremented after every instruction
-                long long instruction_id = slim::IR::total_instructions;
+                long long instruction_id = this->total_instructions;
 
                 // Increment the total instructions count
-                slim::IR::total_instructions++;
+                this->total_instructions++;
 
                 base_instruction->setInstructionId(instruction_id);
 

@@ -3,6 +3,12 @@ PROJECT(slim)
 
 set(ENV{LLVM_DIR} /usr/lib/llvm-14/lib/cmake/llvm)
 
+option(MemorySSAFlag "To run the print statements" OFF)
+
+if (MemorySSAFlag)
+    add_definitions(-DMemorySSAFlag=1)
+endif()
+
 include_directories(include)
 
 find_package(LLVM REQUIRED CONFIG)

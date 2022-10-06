@@ -179,12 +179,21 @@ public:
     // Returns the result operand
     std::pair<SLIMOperand *, int> getResultOperand();
 
+    // Sets the result operand
+    void setResultOperand(std::pair<SLIMOperand *, int> new_operand);
+
     // Returns the number of operands
     unsigned getNumOperands();
 
     // Returns the operand at a particular index
     std::pair<SLIMOperand *, int> getOperand(unsigned index);
-    
+
+    // Sets the operand at the given index
+    void setOperand(unsigned index, std::pair<SLIMOperand *, int> new_operand);
+
+    // Sets the indirection level of RHS operand at the given index
+    void setRHSIndirection(unsigned index, unsigned new_indirection);
+
     // Pure virtual function - every SLIM instruction class must implement this function 
     virtual void printInstruction() = 0;
 

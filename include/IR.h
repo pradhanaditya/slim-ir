@@ -1,16 +1,25 @@
 #include "Instructions.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Analysis/MemorySSA.h"
+#include "llvm/Analysis/BasicAliasAnalysis.h"
 
 namespace slim
 {
+// Check if the SSA variable (created using MemorySSA) already exists or not
+extern std::map<std::string, bool> is_ssa_version_available;
+
 // Process the llvm instruction and return the corresponding SLIM instruction
 BaseInstruction * processLLVMInstruction(llvm::Instruction &instruction);
-    
+
+// Creates different SSA versions for global and address-taken local variables using Memory SSA
+void createSSAVersions(std::unique_ptr<llvm::Module> &module);
+
 // Creates the SLIM abstraction and provides APIs to interact with it
 class IR 
 {
 protected:
-    static long long total_instructions;
-    static long long total_basic_blocks;
+    long long total_instructions;
+    long long total_basic_blocks;
     std::unordered_map<llvm::BasicBlock *, long long> basic_block_to_id;
     std::vector<llvm::Function *> functions;
 
@@ -30,7 +39,7 @@ public:
     std::unique_ptr<llvm::Module> & getLLVMModule();
 
     // Return the total number of instructions (across all basic blocks of all procedures)
-    static long long getTotalInstructions();
+    long long getTotalInstructions();
 
     // Return the total number of functions in the module
     unsigned getNumberOfFunctions();
@@ -67,6 +76,9 @@ public:
     
     // Get basic block id
     long long getBasicBlockId(llvm::BasicBlock *basic_block);
+
+    // Optimize the IR (please use only when you are using the MemorySSAFlag)
+    slim::IR * optimizeIR();
 
     // Dump the IR
     void dumpIR();

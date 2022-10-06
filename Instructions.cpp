@@ -124,12 +124,37 @@ std::pair<SLIMOperand *, int> BaseInstruction::getResultOperand()
     return this->result;
 }
 
+// Sets the result operand
+void BaseInstruction::setResultOperand(std::pair<SLIMOperand *, int> new_operand)
+{
+    this->result = new_operand;
+}
+
 // Returns the number of operands
 unsigned BaseInstruction::getNumOperands()
 {
     return this->operands.size();
 }
 
+// Sets the operand at the given index
+void BaseInstruction::setOperand(unsigned index, std::pair<SLIMOperand *, int> new_operand)
+{
+    // Check if the index is less than the total number of RHS operands of this instruction
+    assert(index < this->getNumOperands());
+
+    this->operands[index] = new_operand;
+}
+
+// Sets the indirection level of RHS operand at the given index
+void BaseInstruction::setRHSIndirection(unsigned index, unsigned new_indirection)
+{
+    // Check if the index is less than the total number of RHS operands of this instruction
+    assert(index < this->getNumOperands());
+
+    // Update the indirection
+    this->operands[index].second = new_indirection;
+}
+    
 // Returns the operand at a particular index
 std::pair<SLIMOperand *, int> BaseInstruction::getOperand(unsigned index)
 {
@@ -183,6 +208,7 @@ AllocaInstruction::AllocaInstruction(llvm::Instruction *instruction): BaseInstru
     
     SLIMOperand *new_operand = new SLIMOperand((llvm::Value *) instruction, true);
     this->result = std::make_pair(new_operand, 1);
+    OperandRepository::alloca_operand.insert(this->result.first->getValue());
     OperandRepository::setSLIMOperand((llvm::Value *) instruction, this->result.first);
 }
 
