@@ -15,6 +15,9 @@ cd build
 2. Run the cmake command to generate the Makefile:
 `cmake -S .. -B .`
 
+But if you want to use Memory SSA, then please run the cmake command by specifying the Memory SSA flag, the command is as follows:
+`cmake -DMemorySSAFlag=ON -S .. -B .`
+
 3. Install the library by the command:
 `sudo make install`
 
@@ -92,7 +95,35 @@ int main(int argc, char *argv[])
 
 ```
 
-Since this is the first beta version of SLIM, it is quite possible that the implementation has some bug(s). Please feel free to raise a pull request or send a mail to pradhanaditya@cse.iitb.ac.in in case of any issue.
+The sample main.cpp file to use Memory SSA and to get the updated SLIM IR after non-adjacent load-store optimization is shown below:
+
+```c++
+// Some headers
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2 || argc > 2)
+    {
+        llvm::errs() << "We expect exactly one argument - the name of the LLVM IR file!\n";
+        exit(1);
+    }
+
+    llvm::SMDiagnostic smDiagnostic;
+
+    std::unique_ptr<llvm::Module> module = parseIRFile(argv[1], smDiagnostic, context);
+
+    slim::IR *transformIR = new slim::IR(module);
+
+    slim::IR *optimized_IR = transformIR->optimizeIR();
+
+    optimized_IR->dumpIR();
+    
+    return 0;
+}
+
+```
+
+Please feel free to raise a pull request or send a mail to pradhanaditya@cse.iitb.ac.in in case of any bug(s) or issue(s).
 
 #### References:
 1. https://stackoverflow.com/questions/50432967/how-to-save-the-variable-name-when-use-clang-to-generate-llvm-ir
