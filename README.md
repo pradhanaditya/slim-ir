@@ -50,8 +50,8 @@ Before using SLIM, please ensure that your LLVM IR output (.ll) file is generate
 
 ```bash
 lloutput() {
-    clang-14 -fno-discard-value-names -emit-llvm -O0 -Xclang -disable-O0-optnone -g -S "$1"
-    opt-14 -instnamer -mem2reg -aa-pipeline='basic-aa' -S "${1%%.*}.ll" > "output.ll"
+    clang-14 -fno-discard-value-names -emit-llvm -O0 -Xclang -disable-O0-optnone -g -S "$1" -o "${1%.*}.ll"
+    opt-14 -instnamer -mem2reg -aa-pipeline='basic-aa' -S "${1%.*}.ll" > "${1%.*}.slim.ll"
 }
 ```
 
