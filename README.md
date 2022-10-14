@@ -6,20 +6,16 @@ The SLIM implementation takes a `.ll` file (which is the human readable form of 
 
 To install the SLIM library, please follow these steps:
 
-1. Create a build folder and change your working directory to this folder
-```bash
-mkdir build
-cd build
-```
+1. Create a build folder and change your working directory to this folder: `mkdir -p build && cd build`
 
 2. Run the cmake command to generate the Makefile:
-`cmake -S .. -B .`
+   `cmake -S .. -B .`
 
 But if you want to use Memory SSA, then please run the cmake command by specifying the Memory SSA flag, the command is as follows:
 `cmake -DMemorySSAFlag=ON -S .. -B .`
 
 3. Install the library by the command:
-`sudo make install`
+   `sudo make install`
 
 The library will be installed at the location `/usr/local/lib` and the header files will be stored at the location `/usr/local/include/slim`. These locations can be used in the parent CMakeFile of your LLVM project. A sample CMakeLists.txt file is shown below:
 
@@ -63,7 +59,8 @@ You may also paste this at the end of `~/.bashrc` file so that the output can be
 `lloutput <file-name>`
 
 Some basic information about the important flags in the above commands:
-- `-fno-discard-value-names` is used to avoid the numeric (or temporary) naming of variables wherever possible and retain the original source program variable name. [[1]](https://stackoverflow.com/questions/50432967/how-to-save-the-variable-name-when-use-clang-to-generate-llvm-ir) 
+
+- `-fno-discard-value-names` is used to avoid the numeric (or temporary) naming of variables wherever possible and retain the original source program variable name. [[1]](https://stackoverflow.com/questions/50432967/how-to-save-the-variable-name-when-use-clang-to-generate-llvm-ir)
 - `-Xclang` and `-disable-O0-optnone` flags are used to prevent clang from adding the optnone attribute to each function. The optnone attribute (when used with the optimization level `-O0`) prevents further optimizations like mem2reg, which is required by our implementation. [[2]](https://stackoverflow.com/questions/46513801/llvm-opt-mem2reg-has-no-effect)
 - `-O0` and `-g` flags are used to get the full debug information. This can be used to print the source program line number corresponding to an LLVM instruction, for example. [[3]](https://llvm.org/docs/SourceLevelDebugging.html)
 - `-instnamer` flag is used to assign names to the LLVM IR instructions. [[4]](https://stackoverflow.com/questions/68029581/how-to-assign-names-to-the-llvm-ir-instructions)
@@ -126,6 +123,7 @@ int main(int argc, char *argv[])
 Please feel free to raise a pull request or send a mail to pradhanaditya@cse.iitb.ac.in in case of any bug(s) or issue(s).
 
 #### References:
+
 1. https://stackoverflow.com/questions/50432967/how-to-save-the-variable-name-when-use-clang-to-generate-llvm-ir
 2. https://stackoverflow.com/questions/46513801/llvm-opt-mem2reg-has-no-effect
 3. https://llvm.org/docs/SourceLevelDebugging.html
