@@ -154,7 +154,171 @@ void BaseInstruction::setRHSIndirection(unsigned index, unsigned new_indirection
     // Update the indirection
     this->operands[index].second = new_indirection;
 }
-    
+
+// Create and return a variant of this instruction
+/*BaseInstruction * BaseInstruction::createVariant(std::pair<SLIMOperand *, int> result, std::vector<std::pair<SLIMOperand *, int>> operands)
+{
+    BaseInstruction *base_instruction;
+                
+    if (llvm::isa<llvm::AllocaInst>(instruction))
+    {
+        base_instruction = new AllocaInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::LoadInst>(instruction))
+    {
+        base_instruction = new LoadInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::StoreInst>(instruction))
+    {
+        base_instruction = new StoreInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::FenceInst>(instruction))
+    {
+        base_instruction = new FenceInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::AtomicCmpXchgInst>(instruction))
+    {
+        base_instruction = new AtomicCompareChangeInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::AtomicRMWInst>(instruction))
+    {
+        base_instruction = new AtomicModifyMemInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::GetElementPtrInst>(instruction))
+    {
+        base_instruction = new GetElementPtrInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::UnaryOperator>(instruction))
+    {
+        base_instruction = new FPNegationInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::BinaryOperator>(instruction))
+    {
+        base_instruction = new BinaryOperation(&instruction);
+    }
+    else if (llvm::isa<llvm::ExtractElementInst>(instruction))
+    {
+        base_instruction = new ExtractElementInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::InsertElementInst>(instruction))
+    {
+        base_instruction = new InsertElementInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::ShuffleVectorInst>(instruction))
+    {
+        base_instruction = new ShuffleVectorInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::ExtractValueInst>(instruction))
+    {
+        base_instruction = new ExtractValueInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::InsertValueInst>(instruction))
+    {
+        base_instruction = new InsertValueInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::TruncInst>(instruction))
+    {
+        base_instruction = new TruncInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::ZExtInst>(instruction))
+    {
+        base_instruction = new ZextInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::SExtInst>(instruction))
+    {
+        base_instruction = new SextInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::FPTruncInst>(instruction))
+    {
+        base_instruction = new TruncInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::FPExtInst>(instruction))
+    {
+        base_instruction = new FPExtInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::FPToUIInst>(instruction))
+    {
+        base_instruction = new FPToIntInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::FPToSIInst>(instruction))
+    {
+        base_instruction = new FPToIntInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::UIToFPInst>(instruction))
+    {
+        base_instruction = new IntToFPInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::SIToFPInst>(instruction))
+    {
+        base_instruction = new IntToFPInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::PtrToIntInst>(instruction))
+    {
+        base_instruction = new PtrToIntInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::IntToPtrInst>(instruction))
+    {
+        base_instruction = new IntToPtrInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::BitCastInst>(instruction))
+    {
+        base_instruction = new BitcastInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::AddrSpaceCastInst>(instruction))
+    {
+        base_instruction = new AddrSpaceInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::ICmpInst>(instruction))
+    {
+        base_instruction = new CompareInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::FCmpInst>(instruction))
+    {
+        base_instruction = new CompareInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::PHINode>(instruction))
+    {
+        base_instruction = new PhiInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::SelectInst>(instruction))
+    {
+        base_instruction = new SelectInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::FreezeInst>(instruction))
+    {
+        base_instruction = new FreezeInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::CallInst>(instruction))
+    {
+        base_instruction = new CallInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::VAArgInst>(instruction))
+    {
+        base_instruction = new VarArgInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::LandingPadInst>(instruction))
+    {
+        base_instruction = new LandingpadInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::CatchPadInst>(instruction))
+    {
+        base_instruction = new CatchpadInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::CleanupPadInst>(instruction))
+    {
+        base_instruction = new CleanuppadInstruction(&instruction);
+    }
+    else if (llvm::isa<llvm::ReturnInst>(instruction))
+    {
+        base_instruction = new ReturnInstruction(&instruction);
+    }
+    else
+    {
+        llvm_unreachable("[Error] Variant cannot be created for this instruction!");
+    }
+}
+*/
+
 // Returns the operand at a particular index
 std::pair<SLIMOperand *, int> BaseInstruction::getOperand(unsigned index)
 {
@@ -321,18 +485,27 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
         {
             llvm::Value *gep_operand = llvm::cast<llvm::GEPOperator>(result_operand)->getOperand(0);
 
-            result_slim_operand = OperandRepository::getSLIMOperand(gep_operand);
+            //result_slim_operand = OperandRepository::getSLIMOperand(gep_operand);
 
-            if (!result_slim_operand)
+            // if (!result_slim_operand)
+            // {
+            //     if (llvm::isa<llvm::GlobalValue>(gep_operand))
+            //     {
+            //         result_slim_operand = new SLIMOperand(gep_operand, true);
+            //     }
+            //     else
+            //     {
+            //         result_slim_operand = new SLIMOperand(gep_operand);
+            //     }
+            // }
+
+            if (llvm::isa<llvm::GlobalValue>(gep_operand))
             {
-                if (llvm::isa<llvm::GlobalValue>(gep_operand))
-                {
-                    result_slim_operand = new SLIMOperand(gep_operand, true);
-                }
-                else
-                {
-                    result_slim_operand = new SLIMOperand(gep_operand);
-                }
+                result_slim_operand = new SLIMOperand(result_operand, true);
+            }
+            else
+            {
+                result_slim_operand = new SLIMOperand(result_operand);
             }
 
             result_slim_operand->setIsPointerVariable();
