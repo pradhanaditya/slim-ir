@@ -16,7 +16,7 @@ add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
-llvm_map_components_to_libnames(llvm_libs ${LLVM_TARGETS_TO_BUILD} all)
+#llvm_map_components_to_libnames(llvm_libs ${LLVM_TARGETS_TO_BUILD} all)
 
 add_library(slim SHARED
     IR.cpp
@@ -24,7 +24,7 @@ add_library(slim SHARED
     Operand.cpp
 )
 
-target_link_libraries(slim ${llvm_libs})
+target_link_libraries(slim LLVM)
 
 # set_target_properties(slim PROPERTIES
 #     COMPILE_FLAGS "-g -std=c++14 -fno-rtti -fPIC"
