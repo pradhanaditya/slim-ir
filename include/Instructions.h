@@ -112,6 +112,9 @@ protected:
     // Result of the instruction
     std::pair<SLIMOperand *, int> result;
 
+    // Variants info
+    std::map<unsigned, std::map<llvm::Value *, unsigned>> variants;
+
     // Is the instruction an input statement
     bool is_input_statement;
 
@@ -197,6 +200,15 @@ public:
     // Pure virtual function - every SLIM instruction class must implement this function 
     virtual void printInstruction() = 0;
 
+    // Insert new variant info
+    void insertVariantInfo(unsigned result_ssa_version, llvm::Value *variable, unsigned variable_version);
+
+    // Get number of variants
+    unsigned getNumVariants();
+    
+    // Print variants
+    void printMMVariants();
+    
     // --------------- APIs for the Legacy SLIM --------------- //
     
     // Returns true if the instruction is a CALL instruction

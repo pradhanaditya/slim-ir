@@ -336,6 +336,69 @@ void BaseInstruction::printLLVMInstruction()
     llvm::outs() << "\n";
 }
 
+void BaseInstruction::insertVariantInfo(unsigned result_ssa_version, llvm::Value *variable, unsigned variable_version)
+{
+    llvm::outs() << "result_ssa_version_insert = " << result_ssa_version << "\n";
+    
+    this->variants[result_ssa_version][variable] = variable_version;
+    llvm::outs() << "Inserted variant for...\n";
+    this->printLLVMInstruction();
+}
+
+// Get number of variants
+unsigned BaseInstruction::getNumVariants()
+{
+    return this->variants.size();
+}
+
+// Print variants
+void BaseInstruction::printMMVariants()
+{
+    if (this->variants.empty())
+    {
+        llvm::outs() << "No variants for this instruction...\n";
+        this->printInstruction();
+        return ;
+    }
+
+    llvm::outs() << "Number of variants : " << this->variants.size() << "\n";
+    
+    for (auto variant : this->variants)
+    {
+        if (this->getResultOperand().first)
+        {
+            unsigned result_ssa_version = variant.first;
+
+            //llvm::outs() << "Result SSA Version: " << result_ssa_version << "\n";
+
+            this->getResultOperand().first->setSSAVersion(result_ssa_version);
+
+            for (unsigned i = 0; i < this->getNumOperands(); i++)
+            {
+                SLIMOperand * slim_operand_i = this->getOperand(i).first;
+
+                llvm::Value * variable = slim_operand_i->getValue();
+
+                slim_operand_i->setSSAVersion(variant.second[variable]);
+            }
+
+            this->printInstruction();
+
+            for (unsigned i = 0; i < this->getNumOperands(); i++)
+            {
+                SLIMOperand * slim_operand_i = this->getOperand(i).first;
+
+                slim_operand_i->resetSSAVersion();
+            }
+        }
+        else
+        {
+            this->printInstruction();
+            break;
+        }
+    }
+}
+
 // --------------- APIs for the Legacy SLIM ---------------
     
 // Returns true if the instruction is a call instruction
@@ -383,6 +446,8 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
 {
     // Set the instruction type to LOAD
     this->instruction_type = InstructionType::LOAD;
+
+    this->is_expression_assignment = true;
 
     // The value of an instruction is the result operand
     llvm::Value *result_operand = (llvm::Value *) this->instruction;
@@ -435,6 +500,8 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
 {
     // Set the instruction type to LOAD
     this->instruction_type = InstructionType::LOAD;
+
+    this->is_expression_assignment = true;
 
     this->result = std::make_pair(result, 0);
 
@@ -558,12 +625,16 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
 
     if (llvm::isa<llvm::Constant>(rhs_operand) && !rhs_operand->hasName())
     {
+        this->is_constant_assignment = true;
+
         this->result = std::make_pair(result_slim_operand, 0);
         // 0 represents that the operand is a constant and not a memory location
         this->operands.push_back(std::make_pair(rhs_slim_operand, 0));        
     }
     else
     {
+        this->is_expression_assignment = true;
+
         if (result_slim_operand->isGlobalOrAddressTaken() && rhs_slim_operand->isGlobalOrAddressTaken())
         {
             this->result = std::make_pair(result_slim_operand, 1);
@@ -909,6 +980,8 @@ FPNegationInstruction::FPNegationInstruction(llvm::Instruction *instruction): Ba
     // Set the instruction type to FP_NEGATION
     this->instruction_type = InstructionType::FP_NEGATION;
 
+    this->is_expression_assignment = true;
+
     llvm::Value *result_operand = (llvm::Value *) this->instruction;
 
     SLIMOperand *result_slim_operand = new SLIMOperand(result_operand);
@@ -972,6 +1045,8 @@ BinaryOperation::BinaryOperation(llvm::Instruction *instruction): BaseInstructio
     // Set the instruction type to BINARY_OPERATION
     this->instruction_type = InstructionType::BINARY_OPERATION;
 
+    this->is_expression_assignment = true;
+    
     llvm::BinaryOperator *binary_operator;
 
     if (binary_operator = llvm::dyn_cast<llvm::BinaryOperator>(this->instruction))
@@ -1439,6 +1514,8 @@ TruncInstruction::TruncInstruction(llvm::Instruction *instruction): BaseInstruct
     // Set the instruction type to TRUNC
     this->instruction_type = InstructionType::TRUNC;
 
+    this->is_expression_assignment = true;
+
     if (llvm::isa<llvm::TruncInst>(this->instruction) || llvm::isa<llvm::FPTruncInst>(this->instruction))
     {
         llvm::Value *result_operand = (llvm::Value *) instruction;
@@ -1532,6 +1609,8 @@ ZextInstruction::ZextInstruction(llvm::Instruction *instruction): BaseInstructio
 {
     // Set the instruction type to ZEXT
     this->instruction_type = InstructionType::ZEXT;
+
+    this->is_expression_assignment = true;
 
     llvm::ZExtInst *zext_inst;
 
@@ -1627,6 +1706,8 @@ SextInstruction::SextInstruction(llvm::Instruction *instruction): BaseInstructio
     // Set the instruction type to SEXT
     this->instruction_type = InstructionType::SEXT;
 
+    this->is_expression_assignment = true;
+
     llvm::SExtInst *sext_inst;
     
     if (sext_inst = llvm::dyn_cast<llvm::SExtInst>(this->instruction))
@@ -1715,6 +1796,8 @@ FPExtInstruction::FPExtInstruction(llvm::Instruction *instruction): BaseInstruct
     // Set the instruction type to FPEXT
     this->instruction_type = InstructionType::FPEXT;
 
+    this->is_expression_assignment = true;
+
     if (llvm::isa<llvm::FPExtInst>(this->instruction))
     {
         llvm::FPExtInst *fp_ext_inst = llvm::cast<llvm::FPExtInst>(this->instruction);
@@ -1801,6 +1884,8 @@ FPToIntInstruction::FPToIntInstruction(llvm::Instruction *instruction): BaseInst
 {
     // Set the instruction type to FP_TO_INT
     this->instruction_type = InstructionType::FP_TO_INT;
+
+    this->is_expression_assignment = true;
 
     if (llvm::isa<llvm::FPToUIInst>(this->instruction))
     {
@@ -1896,6 +1981,8 @@ IntToFPInstruction::IntToFPInstruction(llvm::Instruction *instruction): BaseInst
     // Set the instruction type to INT_TO_FP
     this->instruction_type = InstructionType::INT_TO_FP;
 
+    this->is_expression_assignment = true;
+
     if (llvm::isa<llvm::UIToFPInst>(this->instruction))
     {
         llvm::UIToFPInst *ui_to_fp_inst = llvm::cast<llvm::UIToFPInst>(this->instruction);
@@ -1989,6 +2076,8 @@ PtrToIntInstruction::PtrToIntInstruction(llvm::Instruction *instruction): BaseIn
     // Set the instruction type to PTR_TO_INT
     this->instruction_type = InstructionType::PTR_TO_INT;
 
+    this->is_expression_assignment = true;
+
     if (llvm::isa<llvm::PtrToIntInst>(this->instruction))
     {
         llvm::Value *result_operand = (llvm::Value *) instruction;
@@ -2072,6 +2161,8 @@ IntToPtrInstruction::IntToPtrInstruction(llvm::Instruction *instruction): BaseIn
 {
     // Set the instruction type to INT_TO_PTR
     this->instruction_type = InstructionType::INT_TO_PTR;
+
+    this->is_expression_assignment = true;
 
     if (llvm::isa<llvm::IntToPtrInst>(this->instruction))
     {
@@ -2157,6 +2248,8 @@ BitcastInstruction::BitcastInstruction(llvm::Instruction *instruction): BaseInst
 {
     // Set the instruction type to BITCAST
     this->instruction_type = InstructionType::BITCAST;
+
+    this->is_expression_assignment = true;
 
     llvm::BitCastInst *bitcast_inst;
 
@@ -2298,6 +2391,8 @@ CompareInstruction::CompareInstruction(llvm::Instruction *instruction): BaseInst
     // Set the instruction type to COMPARE
     this->instruction_type = InstructionType::COMPARE;
 
+    this->is_expression_assignment = true;
+    
     llvm::Value *result_operand = (llvm::Value *) instruction;
 
     SLIMOperand *result_slim_operand = new SLIMOperand(result_operand);
@@ -2494,6 +2589,8 @@ PhiInstruction::PhiInstruction(llvm::Instruction *instruction): BaseInstruction(
     // Set the instruction type to PHI
     this->instruction_type = InstructionType::PHI;
 
+    this->is_expression_assignment = true;
+
     llvm::Value *result_operand = (llvm::Value *) instruction;
 
     SLIMOperand *result_slim_operand = new SLIMOperand(result_operand);
@@ -2549,6 +2646,8 @@ SelectInstruction::SelectInstruction(llvm::Instruction *instruction): BaseInstru
 {
     // Set the instruction type to SELECT
     this->instruction_type = InstructionType::SELECT;
+
+    this->is_expression_assignment = true;
 
     llvm::Value *result_operand = (llvm::Value *) instruction;
 
@@ -3029,6 +3128,8 @@ ReturnInstruction::ReturnInstruction(llvm::Instruction *instruction): BaseInstru
         }
 
         this->return_value = slim_return_value;
+
+        this->operands.push_back(std::make_pair(slim_return_value, 0));
     }
     else
     {
@@ -3090,6 +3191,12 @@ BranchInstruction::BranchInstruction(llvm::Instruction *instruction): BaseInstru
         else
         {
             this->is_conditional = true;
+
+            llvm::Value *condition_operand = branch_instruction->getCondition();
+
+            SLIMOperand *condition_slim_operand = new SLIMOperand(condition_operand);
+
+            this->operands.push_back(std::make_pair(condition_slim_operand, 0));
         }
     }
     else
@@ -3158,6 +3265,8 @@ SwitchInstruction::SwitchInstruction(llvm::Instruction *instruction): BaseInstru
 
         // Set the condition value
         this->condition_value = comparison_slim_operand;
+
+        this->operands.push_back(std::make_pair(condition_value, 0));
 
         // Set the default destination
         this->default_case = switch_instruction->getDefaultDest();

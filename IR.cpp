@@ -365,6 +365,7 @@ slim::IR::IR()
 // Construct the SLIM IR from module
 slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 {
+    this->llvm_module = std::move(module);
     this->total_basic_blocks = 0;
     this->total_instructions = 0;
 
@@ -374,7 +375,10 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
     #endif
 
     // Fetch the function list of the module
-    llvm::SymbolTableList<llvm::Function> &function_list = module->getFunctionList();
+    llvm::SymbolTableList<llvm::Function> &function_list = llvm_module->getFunctionList();
+
+    // Keeps track of the temporaries who are already renamed
+    std::set<llvm::Value *> renamed_temporaries;
 
     // For each function in the module
     for (llvm::Function &function : function_list)
@@ -389,6 +393,10 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
             continue ;
         }
 
+        #ifdef DiscardPointers
+        std::set<llvm::Value *> discarded_result_operands;
+        #endif
+
         // For each basic block in the function
         for (llvm::BasicBlock &basic_block : function.getBasicBlockList())
         {
@@ -402,12 +410,50 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
             // For each instruction in the basic block 
             for (llvm::Instruction &instruction : basic_block.getInstList())
             {
-                if (instruction.hasMetadataOtherThanDebugLoc() || instruction.isDebugOrPseudoInst())
+                if (instruction.isDebugOrPseudoInst())
                 {
                     continue ;
                 }
                 
+                // Ensure that all temporaries have unique name (globally) by appending the function name 
+                // after the temporary name
+                for (unsigned i = 0; i < instruction.getNumOperands(); i++)
+                {
+                    llvm::Value *operand_i = instruction.getOperand(i);
+
+                    if (llvm::isa<llvm::GlobalValue>(operand_i)) continue ;
+
+                    if (operand_i->hasName() && renamed_temporaries.find(operand_i) == renamed_temporaries.end())
+                    {
+                        llvm::StringRef old_name = operand_i->getName();
+                        operand_i->setName(old_name + "_" + function.getName());
+                        renamed_temporaries.insert(operand_i);
+                    }
+                }
+                
                 BaseInstruction *base_instruction = slim::processLLVMInstruction(instruction);
+
+                #ifdef DiscardPointers
+                    bool is_discarded = false;
+
+                    for (unsigned i = 0; i < base_instruction->getNumOperands(); i++)
+                    {
+                        SLIMOperand *operand_i = base_instruction->getOperand(i).first;
+
+                        if (!operand_i || !operand_i->getValue()) continue ;
+                        if (operand_i->isPointerInLLVM() || (operand_i->getValue() && discarded_result_operands.find(operand_i->getValue()) != discarded_result_operands.end()))
+                        {
+                            is_discarded = true;
+                            break;
+                        }
+                    }
+
+                    if (is_discarded && base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue())
+                    {
+                        discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
+                        continue ;
+                    }
+                #endif
 
                 if (base_instruction->getInstructionType() == InstructionType::CALL)
                 {
@@ -459,6 +505,10 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
             }
         }
     }
+
+    llvm::outs() << "Total number of functions: " << functions.size() << "\n";
+    llvm::outs() << "Total number of basic blocks: " << total_basic_blocks << "\n";
+    llvm::outs() << "Total number of instructions: " << total_instructions << "\n";
 }
 
 // Returns the total number of instructions across all the functions and basic blocks
@@ -815,10 +865,10 @@ void slim::IR::dumpIR()
 }
 
 
-void slim::IR::generateIR(std::unique_ptr<llvm::Module> &module){
+void slim::IR::generateIR(){
 
     // Fetch the function list of the module
-    llvm::SymbolTableList<llvm::Function> &function_list = module->getFunctionList();
+    llvm::SymbolTableList<llvm::Function> &function_list = this->llvm_module->getFunctionList();
     
     // For each function in the module
     for (llvm::Function &function : function_list)
@@ -905,6 +955,11 @@ void slim::IR::generateIR(std::unique_ptr<llvm::Module> &module){
     }
 }
 
+// Returns the LLVM module
+std::unique_ptr<llvm::Module> & slim::IR::getLLVMModule()
+{
+    return this->llvm_module;
+}
 
 // Provides APIs similar to the older implementation of SLIM in order to support the implementations
 // that are built using the older SLIM as a base 

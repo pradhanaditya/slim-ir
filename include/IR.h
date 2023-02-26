@@ -2,6 +2,9 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Analysis/MemorySSA.h"
 #include "llvm/Analysis/BasicAliasAnalysis.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/IR/Type.h"
 
 namespace slim
 {
@@ -18,6 +21,7 @@ void createSSAVersions(std::unique_ptr<llvm::Module> &module);
 class IR 
 {
 protected:
+    std::unique_ptr<llvm::Module> llvm_module;
     long long total_instructions;
     long long total_basic_blocks;
     std::unordered_map<llvm::BasicBlock *, long long> basic_block_to_id;
@@ -33,8 +37,9 @@ public:
     // Construct the SLIM IR from module
     IR(std::unique_ptr<llvm::Module> &module);
 
-    void generateIR(std::unique_ptr<llvm::Module> &module);
-    
+    // void generateIR(std::unique_ptr<llvm::Module> &module);
+    void generateIR();
+
     // Returns the LLVM module
     std::unique_ptr<llvm::Module> & getLLVMModule();
 

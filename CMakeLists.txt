@@ -3,10 +3,21 @@ PROJECT(slim)
 
 set(ENV{LLVM_DIR} /usr/lib/llvm-14/lib/cmake/llvm)
 
-option(MemorySSAFlag "To run the print statements" OFF)
+option(MemorySSAFlag "To use Memory SSA for creating different SSA versions of globals and address taken locals" OFF)
+option(DiscardPointers "To discard instructions that contain or depend on pointer variables" OFF)
 
 if (MemorySSAFlag)
     add_definitions(-DMemorySSAFlag=1)
+else ()
+    #add_definitions(-DMemorySSAFlag=0)
+    remove_definitions(-DMemorySSAFlag=1)
+endif()
+
+if (DiscardPointers)
+    add_definitions(-DDiscardPointers=1)
+else ()
+    #add_definitions(-DDiscardPointers=0)
+    remove_definitions(-DDiscardPointers=1)
 endif()
 
 include_directories(include)

@@ -107,6 +107,9 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
     this->gep_main_operand = nullptr;
     this->has_indices = false;
     this->has_name = false;
+    
+    this->is_ssa_version = false;
+    this->ssa_version_number = 0;
 
     if (value != nullptr)
     {
@@ -200,6 +203,9 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
     this->gep_main_operand = nullptr;
     this->has_indices = false;
     this->has_name = false;
+
+    this->is_ssa_version = false;
+    this->ssa_version_number = 0;
 
     if (value != nullptr)
     {
@@ -508,18 +514,21 @@ std::string SLIMOperand::_getOperandName()
         }
         else
         {
-            operand->print(llvm::errs());
             llvm_unreachable("[SLIMOperand Error] Unexpected constant!");
         }
     }
     else
     {
-        //stream << operand->getName();
+        operand->print(llvm::outs());
         llvm_unreachable("[SLIMOperand Error] Unexpected operand!");
     }
 
     std::string result = std::string(stream.str());
     
+    if (this->is_ssa_version)
+    {
+        result += ("_" + std::to_string(this->ssa_version_number));
+    }
     //stream.flush();
     
     return result;
@@ -533,12 +542,34 @@ void SLIMOperand::printOperand(llvm::raw_ostream &stream)
     return ;
 }
 
+// Sets the SSA version
+void SLIMOperand::setSSAVersion(unsigned ssa_version)
+{
+    //llvm::outs() << "Setting SSA Version...\n";
+    this->is_ssa_version = true;
+    this->ssa_version_number = ssa_version;
+}
+
+void SLIMOperand::resetSSAVersion()
+{
+    this->is_ssa_version = false;
+}
+
 // --------------- APIs for the Legacy SLIM ---------------
     
 // Returns the name of the operand
 llvm::StringRef SLIMOperand::getName()
 {
-    std::string *operand_name = new std::string(this->_getOperandName());
+    std::string ssa_info = "";
+
+    if (this->is_ssa_version)
+    {
+        llvm::outs() << "Setting SSA Info...\n";
+        ssa_info = "_" + std::to_string(this->ssa_version_number);
+    }
+
+    std::string *operand_name = new std::string(this->_getOperandName() + ssa_info);
+    //llvm::outs() << "Name: " << *operand_name << "\n";
     return llvm::StringRef(*operand_name);
 }
 

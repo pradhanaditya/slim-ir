@@ -60,6 +60,10 @@ protected:
     // Does the operand have a name
     bool has_name;
 
+    // Set the SSA version
+    bool is_ssa_version;
+    unsigned ssa_version_number;
+
     // Contains the llvm::Value * object corresponding to the indices present in the operand
     std::vector<SLIMOperand *> indices;
 
@@ -112,6 +116,12 @@ public:
 
     // Prints the SLIM operand
     void printOperand(llvm::raw_ostream &stream);
+
+    // Sets the SSA version
+    void setSSAVersion(unsigned ssa_version);
+
+    // Reset the SSA version
+    void resetSSAVersion();
 
     // --------------- APIs for the Legacy SLIM ---------------
     
