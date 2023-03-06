@@ -453,6 +453,11 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
                         continue ;
                     }
+                    else if (is_discarded)
+                    {
+                        // Ignore the instruction (because it is using the discarded value)
+                        continue ;
+                    }
                 #endif
 
                 if (base_instruction->getInstructionType() == InstructionType::CALL)
