@@ -371,7 +371,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 
     // Create different SSA versions for globals and address-taken local variables if the MemorySSA flag is passed
     #ifdef MemorySSAFlag
-    slim::createSSAVersions(module);
+    slim::createSSAVersions(this->llvm_module);
     #endif
 
     // Fetch the function list of the module
@@ -417,19 +417,19 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                 
                 // Ensure that all temporaries have unique name (globally) by appending the function name 
                 // after the temporary name
-                for (unsigned i = 0; i < instruction.getNumOperands(); i++)
-                {
-                    llvm::Value *operand_i = instruction.getOperand(i);
+                // for (unsigned i = 0; i < instruction.getNumOperands(); i++)
+                // {
+                //     llvm::Value *operand_i = instruction.getOperand(i);
 
-                    if (llvm::isa<llvm::GlobalValue>(operand_i)) continue ;
+                //     if (llvm::isa<llvm::GlobalValue>(operand_i)) continue ;
 
-                    if (operand_i->hasName() && renamed_temporaries.find(operand_i) == renamed_temporaries.end())
-                    {
-                        llvm::StringRef old_name = operand_i->getName();
-                        operand_i->setName(old_name + "_" + function.getName());
-                        renamed_temporaries.insert(operand_i);
-                    }
-                }
+                //     if (operand_i->hasName() && renamed_temporaries.find(operand_i) == renamed_temporaries.end())
+                //     {
+                //         llvm::StringRef old_name = operand_i->getName();
+                //         operand_i->setName(old_name + "_" + function.getName());
+                //         renamed_temporaries.insert(operand_i);
+                //     }
+                // }
                 
                 BaseInstruction *base_instruction = slim::processLLVMInstruction(instruction);
 
