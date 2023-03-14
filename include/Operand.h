@@ -94,6 +94,9 @@ public:
     // Returns true if the operand is a pointer variable (with reference to the source program)
     bool isPointerVariable();
 
+    // Returns true if the operand is of array type
+    bool isArray();
+    
     // Sets the is_pointer_variable to true
     void setIsPointerVariable();
 

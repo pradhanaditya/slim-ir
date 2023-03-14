@@ -321,6 +321,17 @@ bool SLIMOperand::isPointerVariable()
     return this->is_pointer_variable;
 }
 
+// Returns true if the operand is of array type
+bool SLIMOperand::isArray()
+{
+    if (llvm::isa<llvm::ArrayType>(this->value->getType()))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 // Sets the is_pointer_variable to true
 void SLIMOperand::setIsPointerVariable()
 {
