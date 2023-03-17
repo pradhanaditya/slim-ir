@@ -480,7 +480,7 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
         OperandRepository::setSLIMOperand(rhs_operand, rhs_slim_operand);
     }
 
-    if (rhs_slim_operand->isGlobalOrAddressTaken())
+    if (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP())
     {
         this->operands.push_back(std::make_pair(rhs_slim_operand, 1));
     }
@@ -543,6 +543,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     // Get the result operand (operand corresponding to where the value is stored)
     llvm::Value *result_operand = this->instruction->getOperand(1);
     SLIMOperand *result_slim_operand = OperandRepository::getSLIMOperand(result_operand);
+    bool is_result_gep = llvm::isa<llvm::GEPOperator>(result_operand);
     
     if (!result_slim_operand)
     {
@@ -600,7 +601,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     // Operand can be either a constant, an address-taken local variable, a function argument, 
     // a global variable or a temporary variable
     llvm::Value *rhs_operand = this->instruction->getOperand(0);
-
+    bool is_rhs_gep = llvm::isa<llvm::GEPOperator>(rhs_operand);
     SLIMOperand *rhs_slim_operand = OperandRepository::getSLIMOperand(rhs_operand);
 
     if (!rhs_slim_operand)
@@ -623,7 +624,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
         OperandRepository::setSLIMOperand(rhs_operand, rhs_slim_operand);
     }
 
-    if (llvm::isa<llvm::Constant>(rhs_operand) && !rhs_operand->hasName())
+    if (llvm::isa<llvm::Constant>(rhs_operand) && !rhs_operand->hasName() && !rhs_slim_operand->isResultOfGEP())
     {
         this->is_constant_assignment = true;
 
@@ -635,22 +636,22 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     {
         this->is_expression_assignment = true;
 
-        if (result_slim_operand->isGlobalOrAddressTaken() && rhs_slim_operand->isGlobalOrAddressTaken())
+        if ((result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isResultOfGEP()) && (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP()))
         {
             this->result = std::make_pair(result_slim_operand, 1);
             this->operands.push_back(std::make_pair(rhs_slim_operand, 0));
         }
-        else if (result_slim_operand->isGlobalOrAddressTaken() && (!(rhs_slim_operand->isGlobalOrAddressTaken())))
+        else if ((result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isResultOfGEP()) && (!(rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP())))
         {
             this->result = std::make_pair(result_slim_operand, 1);
             this->operands.push_back(std::make_pair(rhs_slim_operand, 1));
         }
-        else if ((!result_slim_operand->isGlobalOrAddressTaken()) && rhs_slim_operand->isGlobalOrAddressTaken())
+        else if ((!(result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isResultOfGEP())) && (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP()))
         {
             this->result = std::make_pair(result_slim_operand, 2);
             this->operands.push_back(std::make_pair(rhs_slim_operand, 0));
         }
-        else if ((!result_slim_operand->isGlobalOrAddressTaken()) && (!(rhs_slim_operand->isGlobalOrAddressTaken())))
+        else if ((!(result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isResultOfGEP())) && (!(rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP())))
         {
             this->result = std::make_pair(result_slim_operand, 2);
             this->operands.push_back(std::make_pair(rhs_slim_operand, 1));
