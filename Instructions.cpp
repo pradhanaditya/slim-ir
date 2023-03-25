@@ -480,7 +480,7 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
         OperandRepository::setSLIMOperand(rhs_operand, rhs_slim_operand);
     }
 
-    if (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP())
+    if (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isGEPInInstr())
     {
         this->operands.push_back(std::make_pair(rhs_slim_operand, 1));
     }
@@ -624,7 +624,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
         OperandRepository::setSLIMOperand(rhs_operand, rhs_slim_operand);
     }
 
-    if (llvm::isa<llvm::Constant>(rhs_operand) && !rhs_operand->hasName() && !rhs_slim_operand->isResultOfGEP())
+    if (llvm::isa<llvm::Constant>(rhs_operand) && !rhs_operand->hasName() && !rhs_slim_operand->isGEPInInstr())
     {
         this->is_constant_assignment = true;
 
@@ -636,22 +636,22 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     {
         this->is_expression_assignment = true;
 
-        if ((result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isResultOfGEP()) && (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP()))
+        if ((result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isGEPInInstr()) && (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isGEPInInstr()))
         {
             this->result = std::make_pair(result_slim_operand, 1);
             this->operands.push_back(std::make_pair(rhs_slim_operand, 0));
         }
-        else if ((result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isResultOfGEP()) && (!(rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP())))
+        else if ((result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isGEPInInstr()) && (!(rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isGEPInInstr())))
         {
             this->result = std::make_pair(result_slim_operand, 1);
             this->operands.push_back(std::make_pair(rhs_slim_operand, 1));
         }
-        else if ((!(result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isResultOfGEP())) && (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP()))
+        else if ((!(result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isGEPInInstr())) && (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isGEPInInstr()))
         {
             this->result = std::make_pair(result_slim_operand, 2);
             this->operands.push_back(std::make_pair(rhs_slim_operand, 0));
         }
-        else if ((!(result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isResultOfGEP())) && (!(rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isResultOfGEP())))
+        else if ((!(result_slim_operand->isGlobalOrAddressTaken() || result_slim_operand->isGEPInInstr())) && (!(rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isGEPInInstr())))
         {
             this->result = std::make_pair(result_slim_operand, 2);
             this->operands.push_back(std::make_pair(rhs_slim_operand, 1));

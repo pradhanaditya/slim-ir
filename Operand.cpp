@@ -332,10 +332,10 @@ bool SLIMOperand::isArray()
     return false;
 }
 
-// Returns true if the operand is a result of GetElementPtr instruction
-bool SLIMOperand::isResultOfGEP()
+// Returns true if the operand is a GetElementPtr operand inside an instruction
+bool SLIMOperand::isGEPInInstr()
 {
-    return llvm::isa<llvm::GEPOperator>(this->value);
+    return llvm::isa<llvm::GEPOperator>(this->value) && !this->value->hasName();
 }
     
 // Sets the is_pointer_variable to true
