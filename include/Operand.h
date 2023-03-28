@@ -95,7 +95,7 @@ public:
     bool isPointerVariable();
 
     // Returns true if the operand is of array type
-    bool isArray();
+    bool isArrayElement();
     
     // Returns true if the operand is a GetElementPtr operand inside an instruction
     bool isGEPInInstr();
