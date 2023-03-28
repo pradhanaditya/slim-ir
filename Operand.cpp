@@ -324,7 +324,7 @@ bool SLIMOperand::isPointerVariable()
 // Returns true if the operand is of array type
 bool SLIMOperand::isArrayElement()
 {
-    if (get_main_operand != nullptr && llvm::isa<llvm::ArrayType>(this->gep_main_operand->getType()))
+    if (gep_main_operand != nullptr && llvm::isa<llvm::ArrayType>(this->gep_main_operand->getType()))
     {
         return true;
     }
