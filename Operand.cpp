@@ -595,6 +595,27 @@ llvm::StringRef SLIMOperand::getName()
     return llvm::StringRef(*operand_name);
 }
 
+// Returns only name for structures (and not indices) in string format and returns 
+// the same value as getName for other type of operands
+llvm::StringRef SLIMOperand::getOnlyName()
+{
+    if (llvm::isa<llvm::GEPOperator>(operand))
+    {
+        // Cast the operand to llvm::GEPOperator
+        llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(operand);
+
+        // Get the variable operand (which is the first operand)
+        llvm::Value *gep_operand = gep_operator->getOperand(0);
+
+        // Return the structure variable name
+        return gep_operand->getName();
+    }
+    else
+    {
+        return this->getName();
+    }
+}
+
 // --------------------------------------------------------
 
 // Methods of the OperandRepository namespace

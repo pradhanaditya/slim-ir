@@ -129,12 +129,16 @@ public:
     // Reset the SSA version
     void resetSSAVersion();
 
-    // --------------- APIs for the Legacy SLIM ---------------
+    // --------------------------- APIs for the Legacy SLIM ---------------------------
     
     // Returns the name of the operand
     llvm::StringRef getName();
+
+    // Returns only name for structures (and not indices) in string format and returns 
+    // the same value as getName for other type of operands
+    llvm::StringRef getOnlyName();
     
-    // --------------------------------------------------------
+    // --------------------------------------------------------------------------------
 };
 
 namespace OperandRepository
