@@ -503,9 +503,9 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
 
     this->is_expression_assignment = true;
 
-    this->result = std::make_pair(result, 0);
+    this->result = std::make_pair(result, 1);
 
-    this->operands.push_back(std::make_pair(rhs_operand, 0));
+    this->operands.push_back(std::make_pair(rhs_operand, 1));
     
     if (rhs_operand->isPointerVariable())
     {
