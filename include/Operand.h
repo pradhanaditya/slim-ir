@@ -85,6 +85,9 @@ public:
     // Returns true if the operand is a global variable or an address-taken local variable
     bool isGlobalOrAddressTaken();
 
+    // Returns true if the operand is a global variable or an address-taken local variable (considers only the struct if the operand is a GEP operator)
+    bool isVariableGlobal();
+
     // Returns true if the operand is a result of an alloca instruction
     bool isAlloca();
 

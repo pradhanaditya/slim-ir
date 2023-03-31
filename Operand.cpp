@@ -291,6 +291,23 @@ bool SLIMOperand::isGlobalOrAddressTaken()
     return this->is_global_or_address_taken;
 }
 
+// Returns true if the operand is a global variable or an address-taken local variable (considers only the struct if the operand is a GEP operator)
+bool SLIMOperand::isVariableGlobal()
+{
+    if (this->operand_type == OperandType::GEP_OPERATOR)
+    {
+        // Cast the operand to llvm::GEPOperator
+        llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
+
+        // Get the variable operand (which is the first operand)
+        this->gep_main_operand = gep_operator->getOperand(0);
+
+        return llvm::isa<llvm::GlobalValue>(this->gep_main_operand);
+    }
+
+    return this->is_global_or_address_taken;
+}
+
 // Returns true if the operand is a result of an alloca instruction
 bool SLIMOperand::isAlloca()
 {
@@ -599,10 +616,10 @@ llvm::StringRef SLIMOperand::getName()
 // the same value as getName for other type of operands
 llvm::StringRef SLIMOperand::getOnlyName()
 {
-    if (llvm::isa<llvm::GEPOperator>(operand))
+    if (llvm::isa<llvm::GEPOperator>(this->value))
     {
         // Cast the operand to llvm::GEPOperator
-        llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(operand);
+        llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
 
         // Get the variable operand (which is the first operand)
         llvm::Value *gep_operand = gep_operator->getOperand(0);
