@@ -400,6 +400,12 @@ SLIMOperand * SLIMOperand::getIndexOperand(unsigned position)
     return this->indices[position];
 }
 
+// Returns the vector of indices
+std::vector<SLIMOperand *> SLIMOperand::getIndexVector()
+{
+    return this->indices;
+}
+
 void SLIMOperand::addIndexOperand(SLIMOperand * indOperand)
 {
     //Add new index operand to indices

@@ -121,6 +121,9 @@ public:
     // Returns the operand index at the specified position (0-based position)
     SLIMOperand * getIndexOperand(unsigned position);
 
+    // Returns the vector of indices
+    std::vector<SLIMOperand *> getIndexVector();
+
     void addIndexOperand(SLIMOperand *indOperand);
 
     // Prints the SLIM operand
