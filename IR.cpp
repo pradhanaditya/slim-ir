@@ -507,6 +507,16 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 
                 // Map the instruction id to the corresponding SLIM instruction
                 this->inst_id_to_object[instruction_id] = base_instruction;
+
+                // Check if the instruction is a "Return" instruction
+                if (base_instruction->getInstructionType() == InstructionType::RETURN)
+                {
+                    // As we are using the 'mergereturn' pass, there is only one return statement in every function
+                    // and therefore, we will have only 1 return operand which we store in the function_return_operand
+                    // map
+                    ReturnInstruction *return_instruction = (ReturnInstruction *) base_instruction;
+                    OperandRepository::setFunctionReturnOperand(&function, return_instruction->getReturnOperand());
+                }
             }
         }
     }

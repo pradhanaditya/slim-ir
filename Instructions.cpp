@@ -2776,12 +2776,6 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
     {
         llvm::Value *result_operand = (llvm::Value *) call_instruction;
 
-        SLIMOperand *result_slim_operand = new SLIMOperand(result_operand);
-
-        this->result = std::make_pair(result_slim_operand, 0);
-
-        OperandRepository::setSLIMOperand(result_operand, result_slim_operand);
-
         // Store the callee function (returns NULL if it is an indirect call)
         this->callee_function = call_instruction->getCalledFunction();
         
@@ -2813,12 +2807,24 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
             }
         }
 
+        
+
         if (!this->indirect_call)
         {
+            SLIMOperand *result_slim_operand = new SLIMOperand(result_operand, false, this->callee_function);
+            this->result = std::make_pair(result_slim_operand, 0);
+            OperandRepository::setSLIMOperand(result_operand, result_slim_operand);
+
             for (auto arg = this->callee_function->arg_begin(); arg != this->callee_function->arg_end(); arg++)
             {
                 this->formal_arguments_list.push_back(arg);
             }
+        }
+        else
+        {
+            SLIMOperand *result_slim_operand = new SLIMOperand(result_operand);
+            this->result = std::make_pair(result_slim_operand, 0);
+            OperandRepository::setSLIMOperand(result_operand, result_slim_operand);
         }
 
         for (unsigned i = 0; i < call_instruction->arg_size(); i++)

@@ -78,7 +78,7 @@ public:
 
     // Get SLIM instruction from the instruction index
     BaseInstruction * getInstrFromIndex(long long index);
-    
+
     // Get basic block id
     long long getBasicBlockId(llvm::BasicBlock *basic_block);
 

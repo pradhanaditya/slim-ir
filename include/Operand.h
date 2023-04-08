@@ -67,6 +67,9 @@ protected:
     // Contains the llvm::Value * object corresponding to the indices present in the operand
     std::vector<SLIMOperand *> indices;
 
+    // Contains pointer to the function object (corresponding to the callee) if the operand is the result of a call instruction 
+    llvm::Function *direct_callee_function;
+
 private:
     // Internal function to be used only in case of print related tasks
     std::string _getOperandName();
@@ -77,7 +80,7 @@ private:
 public:
     // Constructors
     SLIMOperand(llvm::Value *value);
-    SLIMOperand(llvm::Value *value, bool is_global_or_address_taken);
+    SLIMOperand(llvm::Value *value, bool is_global_or_address_taken, llvm::Function *direct_callee_function = nullptr);
 
     // Returns the operand type
     OperandType getOperandType();
@@ -135,6 +138,9 @@ public:
     // Reset the SSA version
     void resetSSAVersion();
 
+    // Returns the "return operand" of the callee function if this operand is the result of a "direct" call instruction
+    SLIMOperand * getCalleeReturnOperand();
+
     // --------------------------- APIs for the Legacy SLIM ---------------------------
     
     // Returns the name of the operand
@@ -155,9 +161,18 @@ namespace OperandRepository
     // Contains the value objects that are a result of alloca instruction
     extern std::set<llvm::Value *> alloca_operand;
 
+    // Contains the return operand of every function
+    extern std::map<llvm::Function *, SLIMOperand *> function_return_operand;
+
     // Returns the SLIMOperand object if already exists, otherwise returns a nullptr
     SLIMOperand * getSLIMOperand(llvm::Value *value);
 
     // Set the SLIMOperand object corresponding to a LLVM Value object
     void setSLIMOperand(llvm::Value *value, SLIMOperand *slim_operand);
+
+    // Returns the return operand of a function
+    SLIMOperand * getFunctionReturnOperand(llvm::Function *function);
+
+    // Sets the return operand of a function
+    void setFunctionReturnOperand(llvm::Function *function, SLIMOperand *return_operand);
 };

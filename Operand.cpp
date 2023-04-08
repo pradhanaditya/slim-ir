@@ -194,11 +194,11 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
 }
 
 // Operand may or may not be a address-taken local or global variable
-SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken)
+SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken, llvm::Function *direct_callee_function)
 {
     this->value = value;
     this->is_global_or_address_taken = is_global_or_address_taken;
-
+    this->direct_callee_function = direct_callee_function;
     this->is_pointer_variable = false;
     this->gep_main_operand = nullptr;
     this->has_indices = false;
@@ -600,6 +600,21 @@ void SLIMOperand::resetSSAVersion()
     this->is_ssa_version = false;
 }
 
+// Returns the "return operand" of the callee function if this operand is the result of a "direct" call instruction
+SLIMOperand * SLIMOperand::getCalleeReturnOperand()
+{
+    if (this->direct_callee_function == nullptr)
+    {
+        return nullptr;
+    }
+    else
+    {
+        SLIMOperand *return_operand = OperandRepository::getFunctionReturnOperand(this->direct_callee_function);
+        assert(return_operand != nullptr);
+        return return_operand;
+    }
+}
+
 // --------------- APIs for the Legacy SLIM ---------------
     
 // Returns the name of the operand
@@ -650,6 +665,9 @@ namespace OperandRepository
 
     // Contains the value objects that are a result of alloca instruction
     std::set<llvm::Value *> alloca_operand;
+
+    // Contains the return operand of every function
+    std::map<llvm::Function *, SLIMOperand *> function_return_operand;
 };
 
 SLIMOperand * OperandRepository::getSLIMOperand(llvm::Value *value)
@@ -665,4 +683,16 @@ SLIMOperand * OperandRepository::getSLIMOperand(llvm::Value *value)
 void OperandRepository::setSLIMOperand(llvm::Value *value, SLIMOperand *slim_operand)
 {
     OperandRepository::value_to_slim_operand[value] = slim_operand;
+}
+
+// Returns the return operand of a function
+SLIMOperand * OperandRepository::getFunctionReturnOperand(llvm::Function *function)
+{
+    return OperandRepository::function_return_operand[function];
+}
+
+// Sets the return operand of a function
+void OperandRepository::setFunctionReturnOperand(llvm::Function *function, SLIMOperand *return_operand)
+{
+    OperandRepository::function_return_operand[function] = return_operand;
 }
