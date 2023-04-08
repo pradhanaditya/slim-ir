@@ -3272,7 +3272,7 @@ SwitchInstruction::SwitchInstruction(llvm::Instruction *instruction): BaseInstru
         // Set the default destination
         this->default_case = switch_instruction->getDefaultDest();
 
-        for (unsigned int i = 0; i < switch_instruction->getNumCases(); i++)
+        for (unsigned int i = 0; i <= switch_instruction->getNumCases(); i++)
         {
             llvm::BasicBlock *case_destination = switch_instruction->getSuccessor(i);
 
