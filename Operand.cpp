@@ -637,7 +637,7 @@ llvm::StringRef SLIMOperand::getName()
 // the same value as getName for other type of operands
 llvm::StringRef SLIMOperand::getOnlyName()
 {
-    if (llvm::isa<llvm::GEPOperator>(this->value) && !llvm::isa<llvm::GetElementPtrInst>(this->value))
+    if (this->isGEPInInstr())
     {
         // Cast the operand to llvm::GEPOperator
         llvm::GEPOperator *gep_operator = llvm::cast<llvm::GEPOperator>(this->value);
