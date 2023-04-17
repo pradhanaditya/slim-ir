@@ -64,6 +64,9 @@ protected:
     bool is_ssa_version;
     unsigned ssa_version_number;
 
+    // To manually keep track whether the operand is of array type
+    bool is_array_type;
+
     // Contains the llvm::Value * object corresponding to the indices present in the operand
     std::vector<SLIMOperand *> indices;
 
@@ -102,6 +105,12 @@ public:
 
     // Returns true if the operand is of array type
     bool isArrayElement();
+    
+    // Sets the is_array_type to true
+    void setArrayType();
+    
+    // Sets the gep_main_operand
+    void setGEPMainOperand(SLIMOperand *operand);
     
     // Returns true if the operand is a GetElementPtr operand inside an instruction
     bool isGEPInInstr();

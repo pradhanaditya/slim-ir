@@ -111,6 +111,8 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
     this->is_ssa_version = false;
     this->ssa_version_number = 0;
 
+    this->is_array_type = false;
+
     if (value != nullptr)
     {
         /*
@@ -206,6 +208,8 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken, ll
 
     this->is_ssa_version = false;
     this->ssa_version_number = 0;
+
+    this->is_array_type = false;
 
     if (value != nullptr)
     {
@@ -341,17 +345,54 @@ bool SLIMOperand::isPointerVariable()
 // Returns true if the operand is of array type
 bool SLIMOperand::isArrayElement()
 {
-    llvm::PointerType *pointer_type = nullptr;
+    if (this->is_array_type)
+        return true;
 
-    if (gep_main_operand != nullptr && (pointer_type = llvm::dyn_cast<llvm::PointerType>(this->gep_main_operand->getType())))
+    if (llvm::isa<llvm::GEPOperator>(this->value))
     {
-        llvm::Type *element_type = pointer_type->getPointerElementType();
+        llvm::GEPOperator *gep_operand = llvm::cast<llvm::GEPOperator>(this->value);
 
-        if (element_type->isArrayTy())
+        // Get the type of the GEP main operand
+        llvm::Type * type = this->gep_main_operand->getType()->getContainedType(0);
+
+        // If the type is an array then return true
+        if (type->isArrayTy())
             return true;
+
+        // Otherwise the type is a structure, so we check if any of its fields is of array type
+        for (unsigned i = 2; i < gep_operand->getNumOperands(); i++)
+        {
+            // Get the ith operand
+            llvm::Value * operand_i = gep_operand->getOperand(i);
+
+            // Cast the value object to constant int (since it is an index)
+            llvm::ConstantInt *constant_int_i = llvm::cast<llvm::ConstantInt>(operand_i);
+
+            // If the type of GEPOperator is a structure
+            if (llvm::isa<llvm::StructType>(type))
+            {
+                // Assignment to type is required to check for nested structures
+                type = type->getStructElementType(constant_int_i->getSExtValue());
+
+                if (type->isArrayTy())
+                    return true;
+            }
+        }
     }
 
     return false;
+}
+
+// Sets the is_array_type to true
+void SLIMOperand::setArrayType()
+{
+    this->is_array_type = true;
+}
+
+// Sets the gep_main_operand
+void SLIMOperand::setGEPMainOperand(SLIMOperand *operand)
+{
+    this->gep_main_operand = operand->getValue();
 }
 
 // Returns true if the operand is a GetElementPtr operand inside an instruction
