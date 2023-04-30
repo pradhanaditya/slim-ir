@@ -628,7 +628,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     {
         this->is_constant_assignment = true;
 
-        this->result = std::make_pair(result_slim_operand, 0);
+        this->result = std::make_pair(result_slim_operand, 2);
         // 0 represents that the operand is a constant and not a memory location
         this->operands.push_back(std::make_pair(rhs_slim_operand, 0));        
     }
@@ -860,8 +860,6 @@ GetElementPtrInstruction::GetElementPtrInstruction(llvm::Instruction *instructio
         }   
 
         SLIMOperand * gep_main_slim_operand = new SLIMOperand(get_element_ptr->getPointerOperand());
-
-        this->gep_main_operand = gep_main_slim_operand;
 
         // Create and store the index operands into the indices list
         for (int i = 1; i < get_element_ptr->getNumOperands(); i++)
