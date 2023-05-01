@@ -628,7 +628,15 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     {
         this->is_constant_assignment = true;
 
-        this->result = std::make_pair(result_slim_operand, 2);
+        if (llvm::isa<llvm::GlobalValue>(result_operand))
+        {
+            this->result = std::make_pair(result_slim_operand, 1);
+        }
+        else
+        {
+            this->result = std::make_pair(result_slim_operand, 2);
+        }
+        
         // 0 represents that the operand is a constant and not a memory location
         this->operands.push_back(std::make_pair(rhs_slim_operand, 0));        
     }
