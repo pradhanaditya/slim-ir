@@ -572,23 +572,10 @@ void slim::IR::addFuncBasicBlockInstructions(llvm::Function * function, llvm::Ba
 
         base_instruction->setInstructionId(instruction_id);
 
-        if (llvm::isa<llvm::LoadInst>(instruction) || llvm::isa<llvm::StoreInst>(instruction) 
-        || llvm::isa<llvm::CallInst>(instruction) || llvm::isa<llvm::GetElementPtrInst>(instruction)
-        || llvm::isa<llvm::BitCastInst>(instruction) || llvm::isa<llvm::ReturnInst>(instruction)
-        || llvm::isa<llvm::PHINode>(instruction))
-        {
+        this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
 
-            if (llvm::isa<llvm::LoadInst>(instruction) && !(base_instruction)->hasPointerVariables()
-            || llvm::isa<llvm::StoreInst>(instruction) && !(base_instruction)->hasPointerVariables())
-            {
-                continue ;
-            }
-  
-            this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
-
-            // Map the instruction id to the corresponding SLIM instruction
-            this->inst_id_to_object[instruction_id] = base_instruction;
-        }
+        // Map the instruction id to the corresponding SLIM instruction
+        this->inst_id_to_object[instruction_id] = base_instruction;
     }
 }
 
