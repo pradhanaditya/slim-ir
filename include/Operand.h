@@ -150,6 +150,12 @@ public:
     // Returns the "return operand" of the callee function if this operand is the result of a "direct" call instruction
     SLIMOperand * getCalleeReturnOperand();
 
+    // Clears the index vector
+    void resetIndexVector();
+
+    // Sets 'is_global_or_address_taken' to be true for this operand
+    void setVariableGlobal();
+    
     // --------------------------- APIs for the Legacy SLIM ---------------------------
     
     // Returns the name of the operand

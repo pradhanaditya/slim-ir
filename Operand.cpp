@@ -656,6 +656,18 @@ SLIMOperand * SLIMOperand::getCalleeReturnOperand()
     }
 }
 
+// Clears the index vector
+void SLIMOperand::resetIndexVector()
+{
+    this->indices.clear();
+}
+
+// Sets 'is_global_or_address_taken' to be true for this operand
+void SLIMOperand::setVariableGlobal()
+{
+    this->is_global_or_address_taken = true;
+}
+
 // --------------- APIs for the Legacy SLIM ---------------
     
 // Returns the name of the operand
