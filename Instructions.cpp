@@ -12,7 +12,8 @@ BaseInstruction::BaseInstruction(llvm::Instruction *instruction)
     this->is_constant_assignment = false;
     this->is_expression_assignment = false;
     this->is_input_statement = false;    
-
+    this->is_ignored = false;
+    
     // Set the source line number
     if (instruction->getDebugLoc())
     {
