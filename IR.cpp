@@ -417,19 +417,19 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                 
                 // Ensure that all temporaries have unique name (globally) by appending the function name 
                 // after the temporary name
-                // for (unsigned i = 0; i < instruction.getNumOperands(); i++)
-                // {
-                //     llvm::Value *operand_i = instruction.getOperand(i);
+                for (unsigned i = 0; i < instruction.getNumOperands(); i++)
+                {
+                    llvm::Value *operand_i = instruction.getOperand(i);
 
-                //     if (llvm::isa<llvm::GlobalValue>(operand_i)) continue ;
+                    if (llvm::isa<llvm::GlobalValue>(operand_i)) continue ;
 
-                //     if (operand_i->hasName() && renamed_temporaries.find(operand_i) == renamed_temporaries.end())
-                //     {
-                //         llvm::StringRef old_name = operand_i->getName();
-                //         operand_i->setName(old_name + "_" + function.getName());
-                //         renamed_temporaries.insert(operand_i);
-                //     }
-                // }
+                    if (operand_i->hasName() && renamed_temporaries.find(operand_i) == renamed_temporaries.end())
+                    {
+                        llvm::StringRef old_name = operand_i->getName();
+                        operand_i->setName(old_name + "_" + function.getName());
+                        renamed_temporaries.insert(operand_i);
+                    }
+                }
                 
                 BaseInstruction *base_instruction = slim::processLLVMInstruction(instruction);
 
@@ -515,7 +515,15 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                     // and therefore, we will have only 1 return operand which we store in the function_return_operand
                     // map
                     ReturnInstruction *return_instruction = (ReturnInstruction *) base_instruction;
-                    OperandRepository::setFunctionReturnOperand(&function, return_instruction->getReturnOperand());
+
+                    if (return_instruction->getNumOperands() == 0)
+                    {
+                        OperandRepository::setFunctionReturnOperand(&function, nullptr);
+                    }
+                    else
+                    {
+                        OperandRepository::setFunctionReturnOperand(&function, return_instruction->getReturnOperand());
+                    }
                 }
             }
         }
@@ -599,7 +607,16 @@ long long slim::IR::getFirstIns(llvm::Function* function, llvm::BasicBlock* basi
 
     auto result = func_bb_to_inst_id.find({function, basic_block});
     
-    return result->second.front();
+    auto it = result->second.begin();
+
+    while (it != result->second.end() && this->inst_id_to_object[*it]->isIgnored())
+    {
+        it++;
+    }
+
+    return (it == result->second.end() ? -1 : (*it));
+
+    // return result->second.front();
 }
 
 // Returns the last instruction id in the instruction list of the given function-basicblock pair 
@@ -610,7 +627,14 @@ long long slim::IR::getLastIns(llvm::Function* function, llvm::BasicBlock* basic
 
     auto result = func_bb_to_inst_id.find({function, basic_block});
     
-    return result->second.back();
+    auto it = result->second.rbegin();
+
+    while (it != result->second.rend() && this->inst_id_to_object[*it]->isIgnored())
+    {
+        it++;
+    }
+
+    return (it == result->second.rend() ? -1 : (*it));
 }
 
 // Returns the reversed instruction list for a given function and a basic block

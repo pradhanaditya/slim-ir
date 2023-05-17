@@ -651,7 +651,7 @@ SLIMOperand * SLIMOperand::getCalleeReturnOperand()
     else
     {
         SLIMOperand *return_operand = OperandRepository::getFunctionReturnOperand(this->direct_callee_function);
-        assert(return_operand != nullptr);
+        
         return return_operand;
     }
 }

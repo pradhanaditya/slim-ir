@@ -106,6 +106,9 @@ protected:
     // The basic block to which this instruction belongs
     llvm::BasicBlock *basic_block;
 
+    // The instruction is expected to be ignored in the analysis (if the flag is set)
+    bool is_ignored;
+
     // Operands of the instruction
     std::vector<std::pair<SLIMOperand *, int>> operands;
 
@@ -173,6 +176,12 @@ public:
     // Returns the source file name corresponding to this instruction (to be used only for print purposes)
     std::string getSourceFileName();
 
+    // Sets the ignore flag
+    void setIgnore();
+
+    // Returns true if the instruction is to be ignored (during analysis)
+    bool isIgnored();
+    
     // Returns true if the instruction involves any pointer variable (with reference to the source program)
     bool hasPointerVariables();
 

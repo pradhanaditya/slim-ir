@@ -112,6 +112,18 @@ std::string BaseInstruction::getSourceFileName()
     return this->instruction->getDebugLoc().get()->getFilename().str();
 }
 
+// Sets the ignore flag
+void BaseInstruction::setIgnore()
+{
+    this->is_ignored = true;
+}
+
+// Returns true if the instruction is to be ignored (during analysis)
+bool BaseInstruction::isIgnored()
+{
+    return this->is_ignored;
+}
+
 // Returns whether the instruction has pointer variables or not
 bool BaseInstruction::hasPointerVariables()
 {
