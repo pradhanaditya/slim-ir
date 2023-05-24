@@ -20,6 +20,12 @@ else ()
     remove_definitions(-DDiscardPointers=1)
 endif()
 
+if (DISABLE_IGNORE_EFFECT)
+    add_definitions(-DDISABLE_IGNORE_EFFECT=1)
+else ()
+    remove_definitions(-DDISABLE_IGNORE_EFFECT=1)
+endif()
+
 include_directories(include)
 
 find_package(LLVM REQUIRED CONFIG)
