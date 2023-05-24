@@ -130,6 +130,9 @@ public:
     // Returns the pointer to the corresponding llvm::Value object 
     llvm::Value * getValue();
 
+    // Returns the type of the operand
+    llvm::Type * getType();
+    
     // Returns the number of indices
     unsigned getNumIndices();
 

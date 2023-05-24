@@ -425,6 +425,17 @@ llvm::Value* SLIMOperand::getValue()
     return this->value;
 }
 
+// Returns the type of the operand
+llvm::Type * SLIMOperand::getType()
+{
+    if (this->value)
+    {
+        return this->value->getType();
+    }
+
+    return nullptr;
+}
+
 // Returns the number of indices
 unsigned SLIMOperand::getNumIndices()
 {
