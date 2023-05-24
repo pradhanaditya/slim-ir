@@ -475,6 +475,15 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                             {
                                 formal_slim_argument = new SLIMOperand(formal_argument);
                                 OperandRepository::setSLIMOperand(formal_argument, formal_slim_argument);
+
+                                if (formal_argument->hasName() && renamed_temporaries.find(formal_argument) == renamed_temporaries.end())
+                                {
+                                    llvm::StringRef old_name = formal_argument->getName();
+                                    formal_argument->setName(old_name + "_" + call_instruction->getCalleeFunction()->getName());
+                                    renamed_temporaries.insert(formal_argument);
+                                }
+
+                                formal_slim_argument->setFormalArgument();
                             }
 
                             LoadInstruction *new_load_instr = new LoadInstruction(&llvm::cast<llvm::CallInst>(instruction), formal_slim_argument, call_instruction->getOperand(arg_i).first);
@@ -606,7 +615,8 @@ long long slim::IR::getFirstIns(llvm::Function* function, llvm::BasicBlock* basi
     assert(this->func_bb_to_inst_id.find({function, basic_block}) != this->func_bb_to_inst_id.end());
 
     auto result = func_bb_to_inst_id.find({function, basic_block});
-    
+
+    #ifdef DISABLE_IGNORE_EFFECT
     auto it = result->second.begin();
 
     while (it != result->second.end() && this->inst_id_to_object[*it]->isIgnored())
@@ -615,8 +625,9 @@ long long slim::IR::getFirstIns(llvm::Function* function, llvm::BasicBlock* basi
     }
 
     return (it == result->second.end() ? -1 : (*it));
-
-    // return result->second.front();
+    #else
+    return result->second.front();
+    #endif
 }
 
 // Returns the last instruction id in the instruction list of the given function-basicblock pair 
@@ -627,6 +638,7 @@ long long slim::IR::getLastIns(llvm::Function* function, llvm::BasicBlock* basic
 
     auto result = func_bb_to_inst_id.find({function, basic_block});
     
+    #ifdef DISABLE_IGNORE_EFFECT
     auto it = result->second.rbegin();
 
     while (it != result->second.rend() && this->inst_id_to_object[*it]->isIgnored())
@@ -635,6 +647,9 @@ long long slim::IR::getLastIns(llvm::Function* function, llvm::BasicBlock* basic
     }
 
     return (it == result->second.rend() ? -1 : (*it));
+    #else
+    return result->second.back();
+    #endif
 }
 
 // Returns the reversed instruction list for a given function and a basic block
