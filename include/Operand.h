@@ -51,6 +51,9 @@ protected:
     // Is the operand a global variable or an address-taken local variable
     bool is_global_or_address_taken;
 
+    // Holds the value "true" if the operand corresponds to the formal argument of a function
+    bool is_formal_argument;
+
     // Is the operand a pointer variable
     bool is_pointer_variable;
 
@@ -90,6 +93,9 @@ public:
         
     // Returns true if the operand is a global variable or an address-taken local variable
     bool isGlobalOrAddressTaken();
+
+    // Returns true if the operand is a formal argument of a function
+    bool isFormalArgument();
 
     // Returns true if the operand is a global variable or an address-taken local variable (considers only the struct if the operand is a GEP operator)
     bool isVariableGlobal();
@@ -156,6 +162,9 @@ public:
     // Sets 'is_global_or_address_taken' to be true for this operand
     void setVariableGlobal();
     
+    // Sets 'is_formal_argument' to be true for this operand
+    void setFormalArgument();
+
     // --------------------------- APIs for the Legacy SLIM ---------------------------
     
     // Returns the name of the operand

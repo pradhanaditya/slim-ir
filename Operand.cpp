@@ -295,6 +295,12 @@ bool SLIMOperand::isGlobalOrAddressTaken()
     return this->is_global_or_address_taken;
 }
 
+// Returns true if the operand is a formal argument of a function
+bool SLIMOperand::isFormalArgument()
+{
+    return this->is_formal_argument;
+}
+
 // Returns true if the operand is a global variable or an address-taken local variable (considers only the struct if the operand is a GEP operator)
 bool SLIMOperand::isVariableGlobal()
 {
@@ -666,6 +672,12 @@ void SLIMOperand::resetIndexVector()
 void SLIMOperand::setVariableGlobal()
 {
     this->is_global_or_address_taken = true;
+}
+
+// Sets 'is_formal_argument' to be true for this operand
+void SLIMOperand::setFormalArgument()
+{
+    this->is_formal_argument = true;
 }
 
 // --------------- APIs for the Legacy SLIM ---------------
