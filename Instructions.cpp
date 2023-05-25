@@ -518,6 +518,12 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
 
     this->result = std::make_pair(result, 1);
 
+    llvm::Value * rhs_operand_after_strip = rhs_operand->getValue()->stripPointerCasts();
+
+    delete rhs_operand;
+
+    rhs_operand = new SLIMOperand(rhs_operand_after_strip);
+    
     this->operands.push_back(std::make_pair(rhs_operand, 1));
     
     if (rhs_operand->isPointerVariable())
@@ -641,7 +647,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     {
         this->is_constant_assignment = true;
 
-        if (llvm::isa<llvm::GlobalValue>(result_operand))
+        if (llvm::isa<llvm::GlobalValue>(result_operand) || result_slim_operand->isGEPInInstr())
         {
             this->result = std::make_pair(result_slim_operand, 1);
         }
