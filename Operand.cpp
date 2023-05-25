@@ -142,6 +142,11 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
         {
             this->has_name = true;
         }
+
+        if (llvm::isa<llvm::Argument>(this->value))
+        {
+            this->is_formal_argument = true;
+        }
     }
 
     // Get the operand type
@@ -229,6 +234,11 @@ SLIMOperand::SLIMOperand(llvm::Value *value, bool is_global_or_address_taken, ll
         if (value->hasName())
         {
             this->has_name = true;
+        }
+
+        if (llvm::isa<llvm::Argument>(this->value))
+        {
+            this->is_formal_argument = true;
         }
     }
 
