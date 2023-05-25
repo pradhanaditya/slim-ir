@@ -493,7 +493,7 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
         OperandRepository::setSLIMOperand(rhs_operand, rhs_slim_operand);
     }
 
-    if (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isGEPInInstr())
+    if (llvm::isa<llvm::GlobalValue>(rhs_slim_operand->getValue()) || rhs_slim_operand->isGEPInInstr())
     {
         this->operands.push_back(std::make_pair(rhs_slim_operand, 1));
     }
@@ -523,7 +523,7 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
     delete rhs_operand;
 
     rhs_operand = new SLIMOperand(rhs_operand_after_strip);
-    
+
     this->operands.push_back(std::make_pair(rhs_operand, 1));
     
     if (rhs_operand->isPointerVariable())
@@ -2639,7 +2639,14 @@ PhiInstruction::PhiInstruction(llvm::Instruction *instruction): BaseInstruction(
         }    
 
         // 0 represents that either it is a constant or the indirection level is not relevant
-        this->operands.push_back(std::make_pair(slim_operand_i, 0));
+        if (slim_operand_i->isPointerVariable())
+        {
+            this->operands.push_back(std::make_pair(slim_operand_i, 1));
+        }
+        else
+        {
+            this->operands.push_back(std::make_pair(slim_operand_i, 0));
+        }
     }
 }
 
