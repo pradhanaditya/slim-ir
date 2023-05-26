@@ -616,7 +616,7 @@ long long slim::IR::getFirstIns(llvm::Function* function, llvm::BasicBlock* basi
 
     auto result = func_bb_to_inst_id.find({function, basic_block});
 
-    #ifdef DISABLE_IGNORE_EFFECT
+    #ifndef DISABLE_IGNORE_EFFECT
     auto it = result->second.begin();
 
     while (it != result->second.end() && this->inst_id_to_object[*it]->isIgnored())
@@ -638,7 +638,7 @@ long long slim::IR::getLastIns(llvm::Function* function, llvm::BasicBlock* basic
 
     auto result = func_bb_to_inst_id.find({function, basic_block});
     
-    #ifdef DISABLE_IGNORE_EFFECT
+    #ifndef DISABLE_IGNORE_EFFECT
     auto it = result->second.rbegin();
 
     while (it != result->second.rend() && this->inst_id_to_object[*it]->isIgnored())
