@@ -493,7 +493,7 @@ LoadInstruction::LoadInstruction(llvm::Instruction *instruction): BaseInstructio
         OperandRepository::setSLIMOperand(rhs_operand, rhs_slim_operand);
     }
 
-    if (llvm::isa<llvm::GlobalValue>(rhs_slim_operand->getValue()) || rhs_slim_operand->isGEPInInstr())
+    if (rhs_slim_operand->isGlobalOrAddressTaken() || rhs_slim_operand->isGEPInInstr())
     {
         this->operands.push_back(std::make_pair(rhs_slim_operand, 1));
     }
