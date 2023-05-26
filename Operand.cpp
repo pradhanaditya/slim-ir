@@ -637,7 +637,7 @@ std::string SLIMOperand::_getOperandName()
     }
     else
     {
-        operand->print(llvm::outs());
+        // operand->print(llvm::outs());
         llvm_unreachable("[SLIMOperand Error] Unexpected operand!");
     }
 

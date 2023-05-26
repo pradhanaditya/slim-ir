@@ -518,12 +518,19 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
 
     this->result = std::make_pair(result, 1);
 
-    llvm::Value * rhs_operand_after_strip = rhs_operand->getValue()->stripPointerCasts();
+    if (rhs_operand && (rhs_operand->getValue() != nullptr))
+    {
+        call_instruction->print(llvm::outs());
+        llvm::outs() << "\n";
 
-    delete rhs_operand;
+        llvm::Value * rhs_operand_after_strip = llvm::dyn_cast<llvm::Value>(rhs_operand->getValue()->stripPointerCasts());
 
-    rhs_operand = new SLIMOperand(rhs_operand_after_strip);
-
+        if (rhs_operand_after_strip)
+        {
+            rhs_operand = new SLIMOperand(rhs_operand_after_strip);
+        }
+    }
+    
     this->operands.push_back(std::make_pair(rhs_operand, 1));
     
     if (rhs_operand->isPointerVariable())
@@ -2621,14 +2628,16 @@ PhiInstruction::PhiInstruction(llvm::Instruction *instruction): BaseInstruction(
 
     SLIMOperand *result_slim_operand = new SLIMOperand(result_operand);
 
+    llvm::PHINode *phi_inst = llvm::cast<llvm::PHINode>(instruction);
+
     // 0 represents that either it is a constant or the indirection level is not relevant    
     this->result = std::make_pair(result_slim_operand, 1);
 
     OperandRepository::setSLIMOperand(result_operand, result_slim_operand);
 
-    for (int i = 0; i < instruction->getNumOperands(); i++)
+    for (int i = 0; i < phi_inst->getNumIncomingValues(); i++)
     {
-        llvm::Value *operand_i = instruction->getOperand(i);
+        llvm::Value *operand_i = phi_inst->getIncomingValue(i);
 
         SLIMOperand *slim_operand_i = OperandRepository::getSLIMOperand(operand_i);
 
