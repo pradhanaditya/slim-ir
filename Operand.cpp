@@ -438,6 +438,11 @@ llvm::Value* SLIMOperand::getValue()
 // Returns the type of the operand
 llvm::Type * SLIMOperand::getType()
 {
+    if (this->value && this->is_global_or_address_taken)
+    {
+        return this->value->getType()->getContainedType(0);
+    }
+
     if (this->value)
     {
         return this->value->getType();
