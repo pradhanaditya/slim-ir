@@ -82,6 +82,12 @@ public:
     // Get basic block id
     long long getBasicBlockId(llvm::BasicBlock *basic_block);
 
+    // Inserts instruction at the front of the basic block (only in this abstraction)
+    void insertInstrAtFront(BaseInstruction *instruction, llvm::BasicBlock *basic_block);
+
+    // Inserts instruction at the end of the basic block (only in this abstraction)
+    void insertInstrAtBack(BaseInstruction *instruction, llvm::BasicBlock *basic_block);
+    
     // Optimize the IR (please use only when you are using the MemorySSAFlag)
     slim::IR * optimizeIR();
 

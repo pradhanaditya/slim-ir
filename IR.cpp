@@ -686,6 +686,34 @@ long long slim::IR::getBasicBlockId(llvm::BasicBlock *basic_block)
     return this->basic_block_to_id[basic_block];
 }
 
+// Inserts instruction at the front of the basic block (only in this abstraction)
+void slim::IR::insertInstrAtFront(BaseInstruction *instruction, llvm::BasicBlock *basic_block)
+{
+    assert(instruction != nullptr && basic_block != nullptr);
+
+    instruction->setInstructionId(this->total_instructions);
+
+    this->func_bb_to_inst_id[std::make_pair(basic_block->getParent(), basic_block)].push_front(this->total_instructions);
+
+    this->inst_id_to_object[this->total_instructions] = instruction;
+
+    this->total_instructions++;
+}
+
+// Inserts instruction at the end of the basic block (only in this abstraction)
+void slim::IR::insertInstrAtBack(BaseInstruction *instruction, llvm::BasicBlock *basic_block)
+{
+    assert(instruction != nullptr && basic_block != nullptr);
+
+    instruction->setInstructionId(this->total_instructions);
+
+    this->func_bb_to_inst_id[std::make_pair(basic_block->getParent(), basic_block)].push_back(this->total_instructions);
+
+    this->inst_id_to_object[this->total_instructions] = instruction;
+    
+    this->total_instructions++;
+}
+
 // Optimize the IR (please use only when you are using the MemorySSAFlag)
 slim::IR * slim::IR::optimizeIR()
 {
