@@ -438,7 +438,7 @@ llvm::Value* SLIMOperand::getValue()
 // Returns the type of the operand
 llvm::Type * SLIMOperand::getType()
 {
-    if (this->value && this->is_global_or_address_taken)
+    if (this->value && llvm::isa<llvm::GlobalValue>(this->value))
     {
         return this->value->getType()->getContainedType(0);
     }
@@ -638,7 +638,14 @@ std::string SLIMOperand::_getOperandName()
     else
     {
         // operand->print(llvm::outs());
-        llvm_unreachable("[SLIMOperand Error] Unexpected operand!");
+        if (operand->hasName())
+        {
+            stream << operand->getName();
+        }
+        else
+        {
+            llvm_unreachable("[SLIMOperand Error] Unexpected operand!");
+        }
     }
 
     std::string result = std::string(stream.str());

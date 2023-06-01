@@ -520,9 +520,6 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
 
     if (rhs_operand && (rhs_operand->getValue() != nullptr))
     {
-        call_instruction->print(llvm::outs());
-        llvm::outs() << "\n";
-
         llvm::Value * rhs_operand_after_strip = llvm::dyn_cast<llvm::Value>(rhs_operand->getValue()->stripPointerCasts());
 
         if (rhs_operand_after_strip)
