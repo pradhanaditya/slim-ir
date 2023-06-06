@@ -29,6 +29,7 @@ protected:
     long long total_basic_blocks;
     std::unordered_map<llvm::BasicBlock *, long long> basic_block_to_id;
     std::vector<llvm::Function *> functions;
+    std::unordered_map<llvm::Function *, llvm::BasicBlock *> function_to_last_block;
 
 public:
     std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> func_bb_to_inst_id;
@@ -90,6 +91,9 @@ public:
 
     // Inserts instruction at the end of the basic block (only in this abstraction)
     void insertInstrAtBack(BaseInstruction *instruction, llvm::BasicBlock *basic_block);
+
+    // Last block of the function
+    llvm::BasicBlock * getLastBlock(llvm::Function * function);
     
     // Optimize the IR (please use only when you are using the MemorySSAFlag)
     slim::IR * optimizeIR();
