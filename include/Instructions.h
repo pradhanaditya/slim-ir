@@ -248,6 +248,7 @@ class LoadInstruction: public BaseInstruction
 public:
     LoadInstruction(llvm::Instruction *instruction);
     LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *result, SLIMOperand *rhs_operand);
+    LoadInstruction(llvm::InvokeInst *call_instruction, SLIMOperand *result, SLIMOperand *rhs_operand);
     void printInstruction();
 };
 
@@ -647,6 +648,7 @@ protected:
     llvm::Function *callee_function;
     SLIMOperand *indirect_call_operand;
     bool indirect_call;
+    std::vector<llvm::Argument *> formal_arguments_list;
     llvm::BasicBlock *normal_destination;
     llvm::BasicBlock *exception_destination;
 
@@ -654,7 +656,9 @@ public:
     InvokeInstruction(llvm::Instruction *instruction);
     bool isIndirectCall();
     SLIMOperand * getIndirectCallOperand();
-    llvm::Function *getCalleeFunction();
+    llvm::Function *getCalleeFunction(); 
+    unsigned getNumFormalArguments();
+    llvm::Argument * getFormalArgument(unsigned index);
     llvm::BasicBlock *getNormalDestination();
     llvm::BasicBlock *getExceptionDestination();
     void printInstruction();

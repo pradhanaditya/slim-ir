@@ -1,3 +1,6 @@
+#ifndef IR_H
+#define IR_H
+
 #include "Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Analysis/MemorySSA.h"
@@ -82,7 +85,7 @@ public:
     // Get basic block id
     long long getBasicBlockId(llvm::BasicBlock *basic_block);
 
-    // Inserts instruction at the front of the basic block (only in this abstraction)
+   // Inserts instruction at the front of the basic block (only in this abstraction)
     void insertInstrAtFront(BaseInstruction *instruction, llvm::BasicBlock *basic_block);
 
     // Inserts instruction at the end of the basic block (only in this abstraction)
@@ -114,3 +117,4 @@ public:
     llvm::Instruction * getInstforIndx(long long index);
 };
 }
+#endif

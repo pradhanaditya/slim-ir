@@ -108,6 +108,7 @@ SLIMOperand::SLIMOperand(llvm::Value *value)
     this->has_indices = false;
     this->has_name = false;
     
+    this->direct_callee_function = nullptr;
     this->is_ssa_version = false;
     this->ssa_version_number = 0;
 
@@ -579,7 +580,8 @@ std::string SLIMOperand::_getOperandName()
         }
         else if (llvm::isa<llvm::ConstantAggregate>(operand))
         {
-            llvm_unreachable("[SLIMOperand Error] The print function does not support constant aggregate!");
+            llvm::cast<llvm::ConstantAggregate>(operand)->print(stream);
+            // llvm_unreachable("[SLIMOperand Error] The print function does not support constant aggregate!");
         }
         else if (llvm::isa<llvm::ConstantDataSequential>(operand))
         {
@@ -687,6 +689,9 @@ SLIMOperand * SLIMOperand::getCalleeReturnOperand()
     {
         return nullptr;
     }
+    else if (this->direct_callee_function->isDeclaration()) {
+        return nullptr;
+    }
     else
     {
         SLIMOperand *return_operand = OperandRepository::getFunctionReturnOperand(this->direct_callee_function);
@@ -766,6 +771,9 @@ namespace OperandRepository
 
     // Contains the return operand of every function
     std::map<llvm::Function *, SLIMOperand *> function_return_operand;
+
+    // Contains the return operand to function mapping
+    std::map<SLIMOperand *, llvm::Function *> return_operand_function;
 };
 
 SLIMOperand * OperandRepository::getSLIMOperand(llvm::Value *value)
@@ -789,8 +797,14 @@ SLIMOperand * OperandRepository::getFunctionReturnOperand(llvm::Function *functi
     return OperandRepository::function_return_operand[function];
 }
 
+// Returns true if operand is a return operand for some function
+bool OperandRepository::isReturnOperand(SLIMOperand *SlimOp)
+{
+    return OperandRepository::return_operand_function.find(SlimOp) != OperandRepository::return_operand_function.end();
+}
 // Sets the return operand of a function
 void OperandRepository::setFunctionReturnOperand(llvm::Function *function, SLIMOperand *return_operand)
 {
     OperandRepository::function_return_operand[function] = return_operand;
+    OperandRepository::return_operand_function[return_operand] = function;
 }

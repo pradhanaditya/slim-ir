@@ -417,7 +417,7 @@ void BaseInstruction::printMMVariants()
 // Returns true if the instruction is a call instruction
 bool BaseInstruction::getCall()
 {
-    return (this->getInstructionType() == InstructionType::CALL);
+    return (this->getInstructionType() == InstructionType::CALL || this->getInstructionType() == InstructionType::INVOKE);
 }
     
 // Returns true if the instruction is a phi instruction
@@ -520,11 +520,61 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
 
     if (rhs_operand && (rhs_operand->getValue() != nullptr))
     {
-        llvm::Value * rhs_operand_after_strip = llvm::dyn_cast<llvm::Value>(rhs_operand->getValue()->stripPointerCasts());
+        // call_instruction->print(llvm::outs());
+        // llvm::outs() << "\n";
+
+        // llvm::Value * rhs_operand_after_strip = llvm::dyn_cast<llvm::Value>(rhs_operand->getValue()->stripPointerCasts());
+        llvm::Value * rhs_operand_after_strip = llvm::dyn_cast<llvm::Value>(rhs_operand->getValue());
 
         if (rhs_operand_after_strip)
         {
-            rhs_operand = new SLIMOperand(rhs_operand_after_strip);
+            if (llvm::isa<llvm::GlobalValue>(rhs_operand_after_strip))
+            {
+                rhs_operand = new SLIMOperand(rhs_operand_after_strip, true);
+            }
+            else
+            {
+                rhs_operand = new SLIMOperand(rhs_operand_after_strip);
+            }
+        }
+    }
+    
+    this->operands.push_back(std::make_pair(rhs_operand, 1));
+    
+    if (rhs_operand->isPointerVariable())
+    {
+        this->has_pointer_variables = true;
+    }
+}
+
+// Used for creating assignment statements of the formal-to-actual arguments (of a Call instruction)
+LoadInstruction::LoadInstruction(llvm::InvokeInst *call_instruction, SLIMOperand *result, SLIMOperand *rhs_operand): BaseInstruction(call_instruction)
+{
+    // Set the instruction type to LOAD
+    this->instruction_type = InstructionType::LOAD;
+
+    this->is_expression_assignment = true;
+
+    this->result = std::make_pair(result, 1);
+
+    if (rhs_operand && (rhs_operand->getValue() != nullptr))
+    {
+        // call_instruction->print(llvm::outs());
+        // llvm::outs() << "\n";
+
+        // llvm::Value * rhs_operand_after_strip = llvm::dyn_cast<llvm::Value>(rhs_operand->getValue()->stripPointerCasts());
+        llvm::Value * rhs_operand_after_strip = llvm::dyn_cast<llvm::Value>(rhs_operand->getValue());
+        
+        if (rhs_operand_after_strip)
+        {
+            if (llvm::isa<llvm::GlobalValue>(rhs_operand_after_strip))
+            {
+                rhs_operand = new SLIMOperand(rhs_operand_after_strip, true);
+            }
+            else
+            {
+                rhs_operand = new SLIMOperand(rhs_operand_after_strip);
+            }
         }
     }
     
@@ -620,6 +670,9 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
 
         OperandRepository::setSLIMOperand(result_operand, result_slim_operand);
     }
+    // else if (llvm::isa<llvm::GlobalVariable>(result_operand) && !result_slim_operand->isGlobalOrAddressTaken()) {
+    //     result_slim_operand->setVariableGlobal();
+    // }
     
     // Operand can be either a constant, an address-taken local variable, a function argument, 
     // a global variable or a temporary variable
@@ -646,6 +699,9 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
 
         OperandRepository::setSLIMOperand(rhs_operand, rhs_slim_operand);
     }
+    // if (llvm::isa<llvm::GlobalVariable>(rhs_operand) && !rhs_slim_operand->isGlobalOrAddressTaken()) {
+    //     rhs_slim_operand->setVariableGlobal();
+    // }
 
     if (llvm::isa<llvm::Constant>(rhs_operand) && !rhs_operand->hasName() && !rhs_slim_operand->isGEPInInstr())
     {
@@ -2819,7 +2875,7 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
         
         if (!this->callee_function)
         {
-            this->callee_function = llvm::dyn_cast<llvm::Function>(call_instruction->getCalledOperand()->stripPointerCasts());    
+            this->callee_function = llvm::dyn_cast<llvm::Function>(call_instruction->getCalledOperand()->stripPointerCastsAndAliases());    
         }
 
         this->indirect_call = false;
@@ -2835,7 +2891,14 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
 
                 if (!this->indirect_call_operand)
                 {
-                    this->indirect_call_operand = new SLIMOperand(called_operand);
+                    if (llvm::isa<llvm::GlobalValue>(called_operand))
+                    {
+                        this->indirect_call_operand = new SLIMOperand(called_operand, true);
+                    }
+                    else
+                    {
+                        this->indirect_call_operand = new SLIMOperand(called_operand);
+                    }
                     OperandRepository::setSLIMOperand(called_operand, indirect_call_operand);
                 }
             }
@@ -2844,8 +2907,6 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
                 llvm_unreachable("[CallInstruction Error] This call instruction is neither a direct call not an indirect call (unexpected error)!");
             }
         }
-
-        
 
         if (!this->indirect_call)
         {
@@ -2877,7 +2938,14 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
             // operand repository
             if (!arg_i_slim_operand)
             {
-                arg_i_slim_operand = new SLIMOperand(arg_i);
+                if (llvm::isa<llvm::GlobalValue>(arg_i))
+                {
+                    arg_i_slim_operand = new SLIMOperand(arg_i, true);
+                }
+                else
+                {
+                    arg_i_slim_operand = new SLIMOperand(arg_i);
+                }
                 OperandRepository::setSLIMOperand(arg_i, arg_i_slim_operand);
             }
 
@@ -3508,7 +3576,7 @@ InvokeInstruction::InvokeInstruction(llvm::Instruction *instruction): BaseInstru
 
         if (!this->callee_function)
         {
-            this->callee_function = llvm::dyn_cast<llvm::Function>(invoke_inst->getCalledOperand()->stripPointerCasts());    
+            this->callee_function = llvm::dyn_cast<llvm::Function>(invoke_inst->getCalledOperand()->stripPointerCastsAndAliases());    
         }
 
         this->indirect_call = false;
@@ -3516,17 +3584,46 @@ InvokeInstruction::InvokeInstruction(llvm::Instruction *instruction): BaseInstru
 
         if (!this->callee_function)
         {
-            this->indirect_call = true;
-            llvm::Value *called_operand = invoke_inst->getCalledOperand();
-            this->indirect_call_operand = OperandRepository::getSLIMOperand(called_operand);
+            if (invoke_inst->isIndirectCall()) {
+                this->indirect_call = true;
+                llvm::Value *called_operand = invoke_inst->getCalledOperand();
+                this->indirect_call_operand = OperandRepository::getSLIMOperand(called_operand);
 
-            if (!this->indirect_call_operand)
-            {
-                this->indirect_call_operand = new SLIMOperand(called_operand);
-                OperandRepository::setSLIMOperand(called_operand, indirect_call_operand);
+                if (!this->indirect_call_operand)
+                {
+                    if (llvm::isa<llvm::GlobalValue>(called_operand))
+                    {
+                        this->indirect_call_operand = new SLIMOperand(called_operand, true);
+                    }
+                    else
+                    {
+                        this->indirect_call_operand = new SLIMOperand(called_operand);
+                    }
+                    OperandRepository::setSLIMOperand(called_operand, indirect_call_operand);
+                }
+            }
+            else {
+                llvm_unreachable("[InvokeInstruction Error] This invoke instruction is neither a direct call not an indirect call (unexpected error)!");
             }
         }
+    
+        if (!this->indirect_call)
+        {
+            SLIMOperand *result_slim_operand = new SLIMOperand(result_operand, false, this->callee_function);
+            this->result = std::make_pair(result_slim_operand, 0);
+            OperandRepository::setSLIMOperand(result_operand, result_slim_operand);
 
+            for (auto arg = this->callee_function->arg_begin(); arg != this->callee_function->arg_end(); arg++)
+            {
+                this->formal_arguments_list.push_back(arg);
+            }
+        }
+        else if (this->indirect_call)
+        {
+            SLIMOperand *result_slim_operand = new SLIMOperand(result_operand);
+            this->result = std::make_pair(result_slim_operand, 0);
+            OperandRepository::setSLIMOperand(result_operand, result_slim_operand);
+        }
         // Store the normal destination
         this->normal_destination = invoke_inst->getNormalDest();
 
@@ -3545,7 +3642,14 @@ InvokeInstruction::InvokeInstruction(llvm::Instruction *instruction): BaseInstru
             // operand repository
             if (!arg_i_slim_operand)
             {
-                arg_i_slim_operand = new SLIMOperand(arg_i);
+                if (llvm::isa<llvm::GlobalValue>(arg_i))
+                {
+                    arg_i_slim_operand = new SLIMOperand(arg_i, true);
+                }
+                else
+                {
+                    arg_i_slim_operand = new SLIMOperand(arg_i);
+                }
                 OperandRepository::setSLIMOperand(arg_i, arg_i_slim_operand);
             }
 
@@ -3577,6 +3681,22 @@ llvm::Function *InvokeInstruction::getCalleeFunction()
 {
     return this->callee_function;
 }
+
+// Returns the number of formal arguments in this call
+unsigned InvokeInstruction::getNumFormalArguments()
+{
+    return this->formal_arguments_list.size();
+}
+
+// Returns the formal argument at a particular index
+llvm::Argument * InvokeInstruction::getFormalArgument(unsigned index)
+{
+    // The index should be not be out-of-bounds
+    assert(index >= 0 && index < this->getNumFormalArguments());
+
+    return this->formal_arguments_list[index];
+}
+
 
 llvm::BasicBlock *InvokeInstruction::getNormalDestination()
 {

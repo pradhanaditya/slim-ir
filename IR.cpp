@@ -414,7 +414,13 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                 {
                     continue ;
                 }
-                
+                else if (llvm::CallBase *CI = llvm::dyn_cast<llvm::CallBase>(&instruction)) {
+                    if (CI->isInlineAsm())
+                        continue;
+                    if (CI->getCalledFunction() && CI->getCalledFunction()->getName() == "__clang_call_terminate") {
+                        continue;
+                    }
+                } 
                 // Ensure that all temporaries have unique name (globally) by appending the function name 
                 // after the temporary name
                 for (unsigned i = 0; i < instruction.getNumOperands(); i++)
@@ -503,6 +509,51 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         }
                     }
                 }
+
+                if (base_instruction->getInstructionType() == InstructionType::INVOKE)
+                {
+                    InvokeInstruction *call_instruction = (InvokeInstruction *) base_instruction;
+
+                    if (!call_instruction->isIndirectCall() && !call_instruction->getCalleeFunction()->isDeclaration())
+                    {
+                        for (unsigned arg_i = 0; arg_i < call_instruction->getNumFormalArguments(); arg_i++)
+                        {
+                            llvm::Argument *formal_argument = call_instruction->getFormalArgument(arg_i);
+                            SLIMOperand * formal_slim_argument = OperandRepository::getSLIMOperand(formal_argument);
+
+                            if (!formal_slim_argument)
+                            {
+                                formal_slim_argument = new SLIMOperand(formal_argument);
+                                OperandRepository::setSLIMOperand(formal_argument, formal_slim_argument);
+
+                                if (formal_argument->hasName() && renamed_temporaries.find(formal_argument) == renamed_temporaries.end())
+                                {
+                                    llvm::StringRef old_name = formal_argument->getName();
+                                    formal_argument->setName(old_name + "_" + call_instruction->getCalleeFunction()->getName());
+                                    renamed_temporaries.insert(formal_argument);
+                                }
+
+                                formal_slim_argument->setFormalArgument();
+                            }
+
+                            LoadInstruction *new_load_instr = new LoadInstruction(&llvm::cast<llvm::InvokeInst>(instruction), formal_slim_argument, call_instruction->getOperand(arg_i).first);
+
+                            // The initial value of total instructions is 0 and it is incremented after every instruction
+                            long long instruction_id = slim::IR::total_instructions;
+
+                            // Increment the total instructions count
+                            this->total_instructions++;
+
+                            new_load_instr->setInstructionId(instruction_id);
+
+                            this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
+
+                            // Map the instruction id to the corresponding SLIM instruction
+                            this->inst_id_to_object[instruction_id] = new_load_instr;
+                        }
+                    }
+                }
+
 
                 // The initial value of total instructions is 0 and it is incremented after every instruction
                 long long instruction_id = this->total_instructions;
@@ -938,6 +989,9 @@ void slim::IR::generateIR(){
 
     // Fetch the function list of the module
     llvm::SymbolTableList<llvm::Function> &function_list = this->llvm_module->getFunctionList();
+
+    // Keeps track of the temporaries who are already renamed
+    std::set<llvm::Value *> renamed_temporaries;
     
     // For each function in the module
     for (llvm::Function &function : function_list)
@@ -965,11 +1019,32 @@ void slim::IR::generateIR(){
             // For each instruction in the basic block 
             for (llvm::Instruction &instruction : basic_block.getInstList())
             {
-                if (instruction.hasMetadataOtherThanDebugLoc() || instruction.isDebugOrPseudoInst())
+                if (instruction.isDebugOrPseudoInst())
                 {
                     continue ;
                 }
+                else if (llvm::CallBase *CI = llvm::dyn_cast<llvm::CallBase>(&instruction)) {
+                    if (CI->isInlineAsm())
+                        continue;
+                    if (CI->getCalledFunction() && CI->getCalledFunction()->getName() == "__clang_call_terminate") {
+                        continue;
+                    }
+                }
                 
+                for (unsigned i = 0; i < instruction.getNumOperands(); i++)
+                {
+                    llvm::Value *operand_i = instruction.getOperand(i);
+
+                    if (llvm::isa<llvm::GlobalValue>(operand_i)) continue ;
+
+                    if (operand_i->hasName() && renamed_temporaries.find(operand_i) == renamed_temporaries.end())
+                    {
+                        llvm::StringRef old_name = operand_i->getName();
+                        operand_i->setName(old_name + "_" + function.getName());
+                        renamed_temporaries.insert(operand_i);
+                    }
+                }
+
                 BaseInstruction *base_instruction = slim::processLLVMInstruction(instruction);
 
                 if (base_instruction->getInstructionType() == InstructionType::CALL)
@@ -987,12 +1062,65 @@ void slim::IR::generateIR(){
                             {
                                 formal_slim_argument = new SLIMOperand(formal_argument);
                                 OperandRepository::setSLIMOperand(formal_argument, formal_slim_argument);
+
+                                if (formal_argument->hasName() && renamed_temporaries.find(formal_argument) == renamed_temporaries.end())
+                                {
+                                    llvm::StringRef old_name = formal_argument->getName();
+                                    formal_argument->setName(old_name + "_" + call_instruction->getCalleeFunction()->getName());
+                                    renamed_temporaries.insert(formal_argument);
+                                }
+
+                                formal_slim_argument->setFormalArgument();
                             }
 
                             LoadInstruction *new_load_instr = new LoadInstruction(&llvm::cast<llvm::CallInst>(instruction), formal_slim_argument, call_instruction->getOperand(arg_i).first);
 
                             // The initial value of total instructions is 0 and it is incremented after every instruction
-                            long long instruction_id = this->total_instructions;
+                            long long instruction_id = slim::IR::total_instructions;
+
+                            // Increment the total instructions count
+                            this->total_instructions++;
+
+                            new_load_instr->setInstructionId(instruction_id);
+
+                            this->func_bb_to_inst_id[func_basic_block].push_back(instruction_id);
+
+                            // Map the instruction id to the corresponding SLIM instruction
+                            this->inst_id_to_object[instruction_id] = new_load_instr;
+                        }
+                    }
+                }
+
+                if (base_instruction->getInstructionType() == InstructionType::INVOKE)
+                {
+                    InvokeInstruction *call_instruction = (InvokeInstruction *) base_instruction;
+
+                    if (!call_instruction->isIndirectCall() && !call_instruction->getCalleeFunction()->isDeclaration())
+                    {
+                        for (unsigned arg_i = 0; arg_i < call_instruction->getNumFormalArguments(); arg_i++)
+                        {
+                            llvm::Argument *formal_argument = call_instruction->getFormalArgument(arg_i);
+                            SLIMOperand * formal_slim_argument = OperandRepository::getSLIMOperand(formal_argument);
+
+                            if (!formal_slim_argument)
+                            {
+                                formal_slim_argument = new SLIMOperand(formal_argument);
+                                OperandRepository::setSLIMOperand(formal_argument, formal_slim_argument);
+
+                                if (formal_argument->hasName() && renamed_temporaries.find(formal_argument) == renamed_temporaries.end())
+                                {
+                                    llvm::StringRef old_name = formal_argument->getName();
+                                    formal_argument->setName(old_name + "_" + call_instruction->getCalleeFunction()->getName());
+                                    renamed_temporaries.insert(formal_argument);
+                                }
+
+                                formal_slim_argument->setFormalArgument();
+                            }
+
+                            LoadInstruction *new_load_instr = new LoadInstruction(&llvm::cast<llvm::InvokeInst>(instruction), formal_slim_argument, call_instruction->getOperand(arg_i).first);
+
+                            // The initial value of total instructions is 0 and it is incremented after every instruction
+                            long long instruction_id = slim::IR::total_instructions;
 
                             // Increment the total instructions count
                             this->total_instructions++;
@@ -1019,6 +1147,24 @@ void slim::IR::generateIR(){
 
                 // Map the instruction id to the corresponding SLIM instruction
                 this->inst_id_to_object[instruction_id] = base_instruction;
+
+                // Check if the instruction is a "Return" instruction
+                if (base_instruction->getInstructionType() == InstructionType::RETURN)
+                {
+                    // As we are using the 'mergereturn' pass, there is only one return statement in every function
+                    // and therefore, we will have only 1 return operand which we store in the function_return_operand
+                    // map
+                    ReturnInstruction *return_instruction = (ReturnInstruction *) base_instruction;
+
+                    if (return_instruction->getNumOperands() == 0)
+                    {
+                        OperandRepository::setFunctionReturnOperand(&function, nullptr);
+                    }
+                    else
+                    {
+                        OperandRepository::setFunctionReturnOperand(&function, return_instruction->getReturnOperand());
+                    }
+                }
             }
         }
     }

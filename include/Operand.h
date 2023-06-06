@@ -190,6 +190,8 @@ namespace OperandRepository
 
     // Contains the return operand of every function
     extern std::map<llvm::Function *, SLIMOperand *> function_return_operand;
+    // Contains the return operand to function mapping
+    extern std::map<SLIMOperand *, llvm::Function *> return_operand_function;
 
     // Returns the SLIMOperand object if already exists, otherwise returns a nullptr
     SLIMOperand * getSLIMOperand(llvm::Value *value);
@@ -199,7 +201,8 @@ namespace OperandRepository
 
     // Returns the return operand of a function
     SLIMOperand * getFunctionReturnOperand(llvm::Function *function);
-
+    // Returns true if operand is a return operand for some function
+    bool isReturnOperand(SLIMOperand *SlimOp);
     // Sets the return operand of a function
     void setFunctionReturnOperand(llvm::Function *function, SLIMOperand *return_operand);
 };
