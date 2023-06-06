@@ -585,7 +585,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         OperandRepository::setFunctionReturnOperand(&function, return_instruction->getReturnOperand());
                     }
 
-                    this->function_to_last_block[function] = basic_block;
+                    this->function_to_last_block[&function] = &basic_block;
                 }
             }
         }
@@ -767,12 +767,12 @@ void slim::IR::insertInstrAtBack(BaseInstruction *instruction, llvm::BasicBlock 
     this->total_instructions++;
 }
 
-llvm::BasicBlock * getLastBlock(llvm::Function * function) {
+llvm::BasicBlock * slim::IR::getLastBlock(llvm::Function * function) {
     if (this->function_to_last_block.find(function) != this->function_to_last_block.end())
     {
         return this->function_to_last_block[function];
     }
-    return function.back();
+    return &function->back();
 }
 
 // Optimize the IR (please use only when you are using the MemorySSAFlag)
