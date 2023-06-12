@@ -29,7 +29,7 @@ protected:
 
 public:
     std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> func_bb_to_inst_id;
-    std::map<long long, BaseInstruction *> inst_id_to_object;
+    std::unordered_map<long long, BaseInstruction *> inst_id_to_object;
     
     // Default constructor
     IR();
@@ -62,7 +62,7 @@ public:
     std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> &getFuncBBToInstructions();
 
     // Get the instruction id to SLIM instruction map (required by the LegacyIR)
-    std::map<long long, BaseInstruction *> &getIdToInstructionsMap();
+    std::unordered_map<long long, BaseInstruction *> &getIdToInstructionsMap();
 
     // Returns the first instruction id in the instruction list of the given function-basicblock pair
     long long getFirstIns(llvm::Function* function, llvm::BasicBlock* basic_block);
@@ -108,7 +108,7 @@ public:
     std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> &getfuncBBInsMap();
 
     // Get the instruction id to SLIM instruction map
-    std::map<long long, BaseInstruction *> &getGlobalInstrIndexList();
+    std::unordered_map<long long, BaseInstruction *> &getGlobalInstrIndexList();
 
     // Returns the corresponding LLVM instruction for the instruction id
     llvm::Instruction * getInstforIndx(long long index);

@@ -603,7 +603,7 @@ std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> 
 } 
 
 // Get the instruction id to SLIM instruction map (required by the LegacyIR)
-std::map<long long, BaseInstruction *> &slim::IR::getIdToInstructionsMap()
+std::unordered_map<long long, BaseInstruction *> &slim::IR::getIdToInstructionsMap()
 {
     return this->inst_id_to_object;
 }
@@ -1050,7 +1050,7 @@ std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> 
 }
 
 // Get the instruction id to SLIM instruction map
-std::map<long long, BaseInstruction *> &slim::LegacyIR::getGlobalInstrIndexList()
+std::unordered_map<long long, BaseInstruction *> &slim::LegacyIR::getGlobalInstrIndexList()
 {
     return this->slim_ir->getIdToInstructionsMap();
 }

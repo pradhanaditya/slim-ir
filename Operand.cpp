@@ -644,7 +644,8 @@ std::string SLIMOperand::_getOperandName()
         }
         else
         {
-            llvm_unreachable("[SLIMOperand Error] Unexpected operand!");
+            stream << "noname";
+            // llvm_unreachable("[SLIMOperand Error] Unexpected operand!");
         }
     }
 
