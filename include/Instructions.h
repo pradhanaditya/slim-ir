@@ -83,6 +83,15 @@ typedef enum
     BITWISE_XOR
 } SLIMBinaryOperator;
 
+// Types of input/scan statements (used to determine if an instruction takes an input)
+typedef enum
+{
+    NOT_APPLICABLE,
+    SCANF,
+    SSCANF,
+    FSCANF
+} InputStatementType;
+
 /*
     BaseInstruction class
     
@@ -120,6 +129,12 @@ protected:
 
     // Is the instruction an input statement
     bool is_input_statement;
+
+    // Type of the input statement
+    InputStatementType input_statement_type;
+
+    // Starting index from where the input arguments start (applicable to a valid input statement)
+    unsigned starting_input_args_index;
 
     // Is the instruction a constant assignment
     bool is_constant_assignment;
@@ -161,6 +176,12 @@ public:
     // Returns true if the instruction is an input statement
     bool isInputStatement();
 
+    // Returns the input statement type
+    InputStatementType getInputStatementType();
+
+    // Returns the starting index of the input arguments (applicable only to valid input statements)
+    unsigned getStartingInputArgsIndex();
+    
     // Returns true if the instruction is a constant assignment
     bool isConstantAssignment();
 

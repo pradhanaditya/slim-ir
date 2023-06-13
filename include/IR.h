@@ -24,6 +24,7 @@ protected:
     std::unique_ptr<llvm::Module> llvm_module;
     long long total_instructions;
     long long total_basic_blocks;
+    long long total_call_instructions;
     std::unordered_map<llvm::BasicBlock *, long long> basic_block_to_id;
     std::vector<llvm::Function *> functions;
 

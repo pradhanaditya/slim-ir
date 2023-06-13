@@ -13,7 +13,8 @@ BaseInstruction::BaseInstruction(llvm::Instruction *instruction)
     this->is_expression_assignment = false;
     this->is_input_statement = false;    
     this->is_ignored = false;
-    
+    this->input_statement_type = NOT_APPLICABLE;
+
     // Set the source line number
     if (instruction->getDebugLoc())
     {
@@ -75,6 +76,20 @@ llvm::BasicBlock * BaseInstruction::getBasicBlock()
 bool BaseInstruction::isInputStatement()
 {
     return this->is_input_statement;
+}
+
+// Returns the input statement type
+InputStatementType BaseInstruction::getInputStatementType()
+{
+    return this->input_statement_type;
+}
+
+// Returns the starting index of the input arguments (applicable only to valid input statements)
+unsigned BaseInstruction::getStartingInputArgsIndex()
+{
+    assert(this->input_statement_type != InputStatementType::NOT_APPLICABLE);
+
+    return this->starting_input_args_index;
 }
 
 // Returns true if the instruction is a constant assignment
@@ -2849,6 +2864,27 @@ CallInstruction::CallInstruction(llvm::Instruction *instruction): BaseInstructio
 
         if (!this->indirect_call)
         {
+            // Check if this call instruction corresponds to either scanf, sscanf, or fscanf
+
+            if (this->callee_function->getName() == "__isoc99_sscanf")
+            {
+                this->input_statement_type = InputStatementType::SSCANF;
+                //this->is_input_statement = true;
+                this->starting_input_args_index = 2;
+            }
+            else if (this->callee_function->getName() == "__isoc99_fscanf")
+            {
+                this->input_statement_type = InputStatementType::FSCANF;
+                //this->is_input_statement = true;
+                this->starting_input_args_index = 2;
+            }
+            else if (this->callee_function->getName() == "__isoc99_scanf")
+            {
+                this->input_statement_type = InputStatementType::SCANF;
+                //this->is_input_statement = true;
+                this->starting_input_args_index = 1;
+            }
+
             SLIMOperand *result_slim_operand = new SLIMOperand(result_operand, false, this->callee_function);
             this->result = std::make_pair(result_slim_operand, 0);
             OperandRepository::setSLIMOperand(result_operand, result_slim_operand);

@@ -368,6 +368,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
     this->llvm_module = std::move(module);
     this->total_basic_blocks = 0;
     this->total_instructions = 0;
+    this->total_call_instructions = 0;
 
     // Create different SSA versions for globals and address-taken local variables if the MemorySSA flag is passed
     #ifdef MemorySSAFlag
@@ -462,6 +463,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 
                 if (base_instruction->getInstructionType() == InstructionType::CALL)
                 {
+                    total_call_instructions++;
                     CallInstruction *call_instruction = (CallInstruction *) base_instruction;
 
                     if (!call_instruction->isIndirectCall() && !call_instruction->getCalleeFunction()->isDeclaration())
@@ -541,6 +543,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
     llvm::outs() << "Total number of functions: " << functions.size() << "\n";
     llvm::outs() << "Total number of basic blocks: " << total_basic_blocks << "\n";
     llvm::outs() << "Total number of instructions: " << total_instructions << "\n";
+    llvm::outs() << "Total number of call instructions: " << total_call_instructions << "\n";
 }
 
 // Returns the total number of instructions across all the functions and basic blocks
