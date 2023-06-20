@@ -538,6 +538,22 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                 }
             }
         }
+
+        // For each basic block in the function
+        for (llvm::BasicBlock &basic_block : function.getBasicBlockList())
+        {
+            // Create function-basicblock pair
+            std::pair<llvm::Function *, llvm::BasicBlock *> func_basic_block{&function, &basic_block};
+
+            if (this->func_bb_to_inst_id.find(func_basic_block) == this->func_bb_to_inst_id.end())
+            {
+                this->basic_block_to_id[&basic_block] = this->total_basic_blocks;
+
+                this->total_basic_blocks++;
+
+                this->func_bb_to_inst_id[func_basic_block] = std::list<long long>();
+            }
+        }
     }
 
     llvm::outs() << "Total number of functions: " << functions.size() << "\n";
@@ -928,8 +944,10 @@ void slim::IR::dumpIR()
         for (long long instruction_id : entry.second)
         {
             BaseInstruction *instruction = inst_id_to_object[instruction_id];
+            llvm::outs() << " [" << instruction_id << "]";
 
             instruction->printInstruction();
+
         }
 
         llvm::outs() << "\n\n";
