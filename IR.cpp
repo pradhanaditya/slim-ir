@@ -480,6 +480,14 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                     }
                     else if (base_instruction->getInstructionType() == InstructionType::ALLOCA)
                     {
+                        llvm::Value *result_operand = base_instruction->getResultOperand().first;
+
+                        if (llvm::isa<llvm::PointerType>(result_operand) || llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
+                        {
+                            discarded_result_operands.insert(result_operand->getValue());
+                            continue ;
+                        }
+
                         // Don't skip this instruction
                     }
                     else if (base_instruction->getInstructionType() == InstructionType::RETURN)
