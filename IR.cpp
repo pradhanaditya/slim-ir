@@ -369,6 +369,8 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
     this->total_basic_blocks = 0;
     this->total_instructions = 0;
     this->total_call_instructions = 0;
+    this->total_direct_call_instructions = 0;
+    this->total_indirect_call_instructions = 0;
 
     // Create different SSA versions for globals and address-taken local variables if the MemorySSA flag is passed
     #ifdef MemorySSAFlag
@@ -443,10 +445,16 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 
                         if (!operand_i || !operand_i->getValue()) continue ;
                         if (operand_i->isPointerInLLVM() || (operand_i->getValue() && discarded_result_operands.find(operand_i->getValue()) != discarded_result_operands.end()))
+                        //if ((operand_i->getValue() && discarded_result_operands.find(operand_i->getValue()) != discarded_result_operands.end()))
                         {
                             is_discarded = true;
                             break;
                         }
+                    }
+
+                    if (base_instruction->getInstructionType() == InstructionType::GET_ELEMENT_PTR)
+                    {
+                        is_discarded = true;
                     }
 
                     if (is_discarded && base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue())
@@ -461,11 +469,158 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                     }
                 #endif
 
+                #ifdef DiscardForSSA
+                    bool is_discarded = false;
+
+                    if (base_instruction->getInstructionType() == InstructionType::GET_ELEMENT_PTR)
+                    {
+                        discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
+                        
+                        continue ;
+                    }
+                    else if (base_instruction->getInstructionType() == InstructionType::ALLOCA)
+                    {
+                        // Don't skip this instruction
+                    }
+                    else if (base_instruction->getInstructionType() == InstructionType::RETURN)
+                    {
+                        // Don't skip this instruction
+                    }
+                    else if (base_instruction->getInstructionType() == InstructionType::LOAD)
+                    {
+                        LoadInstruction *load_inst = (LoadInstruction *) base_instruction;
+
+                        SLIMOperand *rhs_operand = load_inst->getOperand(0).first;
+                        SLIMOperand *result_operand = load_inst->getResultOperand().first;
+
+                        if (discarded_result_operands.find(rhs_operand->getValue()) != discarded_result_operands.end())
+                        {
+                            discarded_result_operands.insert(load_inst->getResultOperand().first->getValue());
+                            continue ;
+                        }
+                        if (llvm::isa<llvm::PointerType>(rhs_operand->getValue()->getType()->getContainedType(0)))
+                        {
+                            // Discard the instruction
+                            continue ;
+                        }
+                        if (llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
+                        {
+                            discarded_result_operands.insert(result_operand->getValue());
+                            continue ;
+                        }
+                        if (llvm::isa<llvm::GEPOperator>(rhs_operand->getValue()) || llvm::isa<llvm::BitCastOperator>(rhs_operand->getValue()))
+                        {
+                            discarded_result_operands.insert(result_operand->getValue());
+                            continue ;
+                        }
+                    }
+                    else if (base_instruction->getInstructionType() == InstructionType::STORE)
+                    {
+                        // Discard the instruction if the result operand is of pointer type
+                        StoreInstruction *store_inst = (StoreInstruction *) base_instruction;
+
+                        SLIMOperand *result_operand = store_inst->getResultOperand().first;
+                        
+                        if (discarded_result_operands.find(result_operand->getValue()) != discarded_result_operands.end())
+                        {
+                            discarded_result_operands.insert(result_operand->getValue());
+                            continue ;
+                        }
+                        else if (discarded_result_operands.find(store_inst->getOperand(0).first->getValue()) != discarded_result_operands.end())
+                        {
+                            discarded_result_operands.insert(result_operand->getValue());
+                            continue ;
+                        }
+
+                        if (llvm::isa<llvm::PointerType>(result_operand->getValue()->getType()->getContainedType(0)))
+                        {
+                            // Discard the instruction
+                            continue ;
+                        }
+
+                        if (llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
+                        {
+                            continue ;
+                        }
+
+                        if (llvm::isa<llvm::GEPOperator>(result_operand->getValue()) || llvm::isa<llvm::BitCastOperator>(result_operand->getValue()))
+                        {
+                            continue ;
+                        }
+                    }
+                    else if (base_instruction->getInstructionType() == InstructionType::CALL)
+                    {
+                        // Don't skip this instruction
+                    }
+                    else if (base_instruction->getInstructionType() == InstructionType::BITCAST)
+                    {
+                        llvm::Type *result_type = base_instruction->getResultOperand().first->getValue()->getType();
+                        llvm::Type *result_contained_type = result_type->getContainedType(0);
+                        llvm::Type *rhs_contained_type = base_instruction->getOperand(0).first->getValue()->getType()->getContainedType(0);
+                        bool is_dependent_on_aggregates = llvm::isa<llvm::ArrayType>(result_contained_type) || llvm::isa<llvm::StructType>(result_contained_type);
+                        is_dependent_on_aggregates = is_dependent_on_aggregates || (llvm::isa<llvm::ArrayType>(rhs_contained_type) || llvm::isa<llvm::StructType>(rhs_contained_type));
+
+                        if (is_dependent_on_aggregates && discarded_result_operands.find(base_instruction->getResultOperand().first->getValue()) != discarded_result_operands.end())
+                        {
+                            discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
+                        }
+                        continue ;
+                    }
+                    else
+                    {
+                        if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && llvm::isa<llvm::PointerType>(base_instruction->getResultOperand().first->getValue()->getType()))
+                        {
+                            continue ;
+                        }
+                        if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && llvm::isa<llvm::StructType>(base_instruction->getResultOperand().first->getValue()->getType()))
+                        {
+                            continue ;
+                        }
+                        if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && llvm::isa<llvm::ArrayType>(base_instruction->getResultOperand().first->getValue()->getType()))
+                        {
+                            continue ;
+                        }
+                        bool flag = false;
+
+                        // Check if one of the operands is a pointer, discard the instruction if
+                        // it is the case
+                        for (unsigned i = 0; i < base_instruction->getNumOperands(); i++)
+                        {
+                            SLIMOperand *operand_i = base_instruction->getOperand(i).first;
+
+                            if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && discarded_result_operands.find(operand_i->getValue()) != discarded_result_operands.end())
+                            {
+                                discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
+                                is_discarded = true;
+                                break;
+                            }
+
+                            // Check if the type of operand is a pointer
+                            if (operand_i->getValue() && llvm::isa<llvm::PointerType>(operand_i->getValue()->getType()))
+                            {
+                                is_discarded = true;
+                                break;
+                            }
+                        }
+
+                        if (is_discarded)
+                        {
+                            continue ;
+                        }
+                    }
+                #endif
+
                 if (base_instruction->getInstructionType() == InstructionType::CALL)
                 {
                     total_call_instructions++;
+
                     CallInstruction *call_instruction = (CallInstruction *) base_instruction;
 
+                    if (call_instruction->isIndirectCall())
+                        total_indirect_call_instructions++;
+                    else
+                        total_direct_call_instructions++;
+                    
                     if (!call_instruction->isIndirectCall() && !call_instruction->getCalleeFunction()->isDeclaration())
                     {
                         for (unsigned arg_i = 0; arg_i < call_instruction->getNumFormalArguments(); arg_i++)
@@ -473,6 +628,13 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                             llvm::Argument *formal_argument = call_instruction->getFormalArgument(arg_i);
                             SLIMOperand * formal_slim_argument = OperandRepository::getSLIMOperand(formal_argument);
 
+                            if (llvm::isa<llvm::PointerType>(formal_argument->getType()))
+                                continue ;
+                            if (llvm::isa<llvm::ArrayType>(formal_argument->getType()))
+                                continue ;
+                            if (llvm::isa<llvm::StructType>(formal_argument->getType()))
+                                continue ;
+                            
                             if (!formal_slim_argument)
                             {
                                 formal_slim_argument = new SLIMOperand(formal_argument);
@@ -560,6 +722,8 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
     llvm::outs() << "Total number of basic blocks: " << total_basic_blocks << "\n";
     llvm::outs() << "Total number of instructions: " << total_instructions << "\n";
     llvm::outs() << "Total number of call instructions: " << total_call_instructions << "\n";
+    llvm::outs() << "Total number of direct-call instructions: " << total_direct_call_instructions << "\n";
+    llvm::outs() << "Total number of indirect-call instructions: " << total_indirect_call_instructions << "\n";
 }
 
 // Returns the total number of instructions across all the functions and basic blocks

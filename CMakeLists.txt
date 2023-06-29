@@ -20,6 +20,13 @@ else ()
     remove_definitions(-DDiscardPointers=1)
 endif()
 
+if (DiscardForSSA)
+    add_definitions(-DDiscardForSSA=1)
+else ()
+    #add_definitions(-DDiscardPointers=0)
+    remove_definitions(-DDiscardForSSA=1)
+endif()
+
 if (DISABLE_IGNORE_EFFECT)
     add_definitions(-DDISABLE_IGNORE_EFFECT=1)
 else ()
