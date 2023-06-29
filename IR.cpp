@@ -397,7 +397,11 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
         }
 
         #ifdef DiscardPointers
-        std::set<llvm::Value *> discarded_result_operands;
+        std::unordered_set<llvm::Value *> discarded_result_operands;
+        #endif
+
+        #ifdef DiscardForSSA
+        std::unordered_set<llvm::Value *> discarded_operands_for_ssa;
         #endif
 
         // For each basic block in the function
@@ -474,17 +478,17 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 
                     if (base_instruction->getInstructionType() == InstructionType::GET_ELEMENT_PTR)
                     {
-                        discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
+                        discarded_operands_for_ssa.insert(base_instruction->getResultOperand().first->getValue());
                         
                         continue ;
                     }
                     else if (base_instruction->getInstructionType() == InstructionType::ALLOCA)
                     {
-                        llvm::Value *result_operand = base_instruction->getResultOperand().first;
+                        llvm::Value *result_operand = base_instruction->getResultOperand().first->getValue();
 
-                        if (llvm::isa<llvm::PointerType>(result_operand) || llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
+                        if (llvm::isa<llvm::PointerType>(result_operand->getType()) || llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
                         {
-                            discarded_result_operands.insert(result_operand->getValue());
+                            discarded_operands_for_ssa.insert(result_operand);
                             continue ;
                         }
 
@@ -501,9 +505,9 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         SLIMOperand *rhs_operand = load_inst->getOperand(0).first;
                         SLIMOperand *result_operand = load_inst->getResultOperand().first;
 
-                        if (discarded_result_operands.find(rhs_operand->getValue()) != discarded_result_operands.end())
+                        if (discarded_operands_for_ssa.find(rhs_operand->getValue()) != discarded_operands_for_ssa.end())
                         {
-                            discarded_result_operands.insert(load_inst->getResultOperand().first->getValue());
+                            discarded_operands_for_ssa.insert(load_inst->getResultOperand().first->getValue());
                             continue ;
                         }
                         if (llvm::isa<llvm::PointerType>(rhs_operand->getValue()->getType()->getContainedType(0)))
@@ -513,12 +517,12 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         }
                         if (llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
                         {
-                            discarded_result_operands.insert(result_operand->getValue());
+                            discarded_operands_for_ssa.insert(result_operand->getValue());
                             continue ;
                         }
                         if (llvm::isa<llvm::GEPOperator>(rhs_operand->getValue()) || llvm::isa<llvm::BitCastOperator>(rhs_operand->getValue()))
                         {
-                            discarded_result_operands.insert(result_operand->getValue());
+                            discarded_operands_for_ssa.insert(result_operand->getValue());
                             continue ;
                         }
                     }
@@ -529,14 +533,14 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 
                         SLIMOperand *result_operand = store_inst->getResultOperand().first;
                         
-                        if (discarded_result_operands.find(result_operand->getValue()) != discarded_result_operands.end())
+                        if (discarded_operands_for_ssa.find(result_operand->getValue()) != discarded_operands_for_ssa.end())
                         {
-                            discarded_result_operands.insert(result_operand->getValue());
+                            discarded_operands_for_ssa.insert(result_operand->getValue());
                             continue ;
                         }
-                        else if (discarded_result_operands.find(store_inst->getOperand(0).first->getValue()) != discarded_result_operands.end())
+                        else if (discarded_operands_for_ssa.find(store_inst->getOperand(0).first->getValue()) != discarded_operands_for_ssa.end())
                         {
-                            discarded_result_operands.insert(result_operand->getValue());
+                            discarded_operands_for_ssa.insert(result_operand->getValue());
                             continue ;
                         }
 
@@ -568,9 +572,9 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         bool is_dependent_on_aggregates = llvm::isa<llvm::ArrayType>(result_contained_type) || llvm::isa<llvm::StructType>(result_contained_type);
                         is_dependent_on_aggregates = is_dependent_on_aggregates || (llvm::isa<llvm::ArrayType>(rhs_contained_type) || llvm::isa<llvm::StructType>(rhs_contained_type));
 
-                        if (is_dependent_on_aggregates && discarded_result_operands.find(base_instruction->getResultOperand().first->getValue()) != discarded_result_operands.end())
+                        if (is_dependent_on_aggregates && discarded_operands_for_ssa.find(base_instruction->getResultOperand().first->getValue()) != discarded_operands_for_ssa.end())
                         {
-                            discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
+                            discarded_operands_for_ssa.insert(base_instruction->getResultOperand().first->getValue());
                         }
                         continue ;
                     }
@@ -596,9 +600,9 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         {
                             SLIMOperand *operand_i = base_instruction->getOperand(i).first;
 
-                            if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && discarded_result_operands.find(operand_i->getValue()) != discarded_result_operands.end())
+                            if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && discarded_operands_for_ssa.find(operand_i->getValue()) != discarded_operands_for_ssa.end())
                             {
-                                discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
+                                discarded_operands_for_ssa.insert(base_instruction->getResultOperand().first->getValue());
                                 is_discarded = true;
                                 break;
                             }
