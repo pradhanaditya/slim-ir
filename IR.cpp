@@ -372,6 +372,12 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
     this->total_direct_call_instructions = 0;
     this->total_indirect_call_instructions = 0;
 
+    unsigned total_pointer_assignments = 0;
+    unsigned total_non_pointer_assignments = 0;
+    unsigned total_other_instructions = 0;
+    unsigned total_local_pointers = 0;
+    unsigned total_local_scalers = 0;
+    
     // Create different SSA versions for globals and address-taken local variables if the MemorySSA flag is passed
     #ifdef MemorySSAFlag
     slim::createSSAVersions(this->llvm_module);
@@ -461,7 +467,11 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         is_discarded = true;
                     }
 
-                    if (is_discarded && base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue())
+                    if (base_instruction->getInstructionType() == InstructionType::CALL)
+                    {
+                        // Don't skip
+                    }
+                    else if (is_discarded && base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue())
                     {
                         discarded_result_operands.insert(base_instruction->getResultOperand().first->getValue());
                         continue ;
@@ -622,6 +632,86 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                     }
                 #endif
 
+                // if (base_instruction->getInstructionType() == InstructionType::LOAD)
+                // {
+                //     LoadInstruction *load_inst = (LoadInstruction *) base_instruction;
+
+                //     SLIMOperand *rhs_operand = load_inst->getOperand(0).first;
+                //     SLIMOperand *result_operand = load_inst->getResultOperand().first;
+
+                //     if (llvm::isa<llvm::PointerType>(rhs_operand->getValue()->getType()->getContainedType(0)))
+                //     {
+                //         total_pointer_assignments++;
+                //     }
+                //     else
+                //     {
+                //         total_non_pointer_assignments++;
+                //     }
+                // }
+                // else if (base_instruction->getInstructionType() == InstructionType::STORE)
+                // {
+                //     // Discard the instruction if the result operand is of pointer type
+                //     StoreInstruction *store_inst = (StoreInstruction *) base_instruction;
+
+                //     SLIMOperand *result_operand = store_inst->getResultOperand().first;
+                    
+                //     if (llvm::isa<llvm::PointerType>(result_operand->getValue()->getType()->getContainedType(0)))
+                //     {
+                //         total_pointer_assignments++;
+                //     }
+                //     else
+                //     {
+                //         total_non_pointer_assignments++;
+                //     }
+                // }
+                // else if (base_instruction->getResultOperand().first != nullptr && base_instruction->getResultOperand().first->getValue() && base_instruction->getResultOperand().first->getValue()->hasName())
+                // {
+                //     SLIMOperand *result = base_instruction->getResultOperand().first;
+
+                //     if (llvm::isa<llvm::PointerType>(result->getValue()->getType()))
+                //     {
+                //         total_pointer_assignments++;
+                //     }
+                //     else
+                //     {
+                //         total_non_pointer_assignments++;
+                //     }
+                // }
+                // else
+                // {
+                //     total_other_instructions++;
+                // }
+
+                // if (base_instruction->getInstructionType() == InstructionType::LOAD)
+                // {
+                //     LoadInstruction *load_inst = (LoadInstruction *) base_instruction;
+
+                //     SLIMOperand *rhs_operand = load_inst->getOperand(0).first;
+                //     SLIMOperand *result_operand = load_inst->getResultOperand().first;
+
+                //     if (llvm::isa<llvm::PointerType>(result_operand->getType()))
+                //     {
+                //         total_local_pointers++;
+                //     }
+                //     else if (!llvm::isa<llvm::StructType>(result_operand->getType()) && !llvm::isa<llvm::ArrayType>(result_operand->getType()))
+                //     {
+                //         total_local_scalers++;
+                //     }
+                // }
+                // else if (base_instruction->getInstructionType() != InstructionType::STORE && base_instruction->getResultOperand().first != nullptr && base_instruction->getResultOperand().first->getValue() && base_instruction->getResultOperand().first->getValue()->hasName())
+                // {
+                //     SLIMOperand *result_operand = base_instruction->getResultOperand().first;
+
+                //     if (llvm::isa<llvm::PointerType>(result_operand->getType()))
+                //     {
+                //         total_local_pointers++;
+                //     }
+                //     else if (!llvm::isa<llvm::StructType>(result_operand->getType()) && !llvm::isa<llvm::ArrayType>(result_operand->getType()))
+                //     {
+                //         total_local_scalers++;
+                //     }
+                // }
+
                 if (base_instruction->getInstructionType() == InstructionType::CALL)
                 {
                     total_call_instructions++;
@@ -640,12 +730,12 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                             llvm::Argument *formal_argument = call_instruction->getFormalArgument(arg_i);
                             SLIMOperand * formal_slim_argument = OperandRepository::getSLIMOperand(formal_argument);
 
-                            if (llvm::isa<llvm::PointerType>(formal_argument->getType()))
-                                continue ;
-                            if (llvm::isa<llvm::ArrayType>(formal_argument->getType()))
-                                continue ;
-                            if (llvm::isa<llvm::StructType>(formal_argument->getType()))
-                                continue ;
+                            // if (llvm::isa<llvm::PointerType>(formal_argument->getType()))
+                            //     continue ;
+                            // if (llvm::isa<llvm::ArrayType>(formal_argument->getType()))
+                            //     continue ;
+                            // if (llvm::isa<llvm::StructType>(formal_argument->getType()))
+                            //     continue ;
                             
                             if (!formal_slim_argument)
                             {
@@ -736,6 +826,11 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
     llvm::outs() << "Total number of call instructions: " << total_call_instructions << "\n";
     llvm::outs() << "Total number of direct-call instructions: " << total_direct_call_instructions << "\n";
     llvm::outs() << "Total number of indirect-call instructions: " << total_indirect_call_instructions << "\n";
+    // llvm::outs() << "Total number of pointer assignments: " << total_pointer_assignments << "\n";
+    // llvm::outs() << "Total number of non-pointer assignments: " << total_non_pointer_assignments << "\n";
+    // llvm::outs() << "Total number of other instructions: " << total_other_instructions << "\n";
+    // llvm::outs() << "Total number of local pointers: " << total_local_pointers << "\n";
+    // llvm::outs() << "Total number of local scaler variables: " << total_local_scalers << "\n";
 }
 
 // Returns the total number of instructions across all the functions and basic blocks

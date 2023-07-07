@@ -302,7 +302,7 @@ OperandType SLIMOperand::getOperandType()
 // Returns true if the operand is a global variable or a address-taken local variable
 bool SLIMOperand::isGlobalOrAddressTaken()
 {
-    return this->is_global_or_address_taken;
+    return this->is_global_or_address_taken || this->isAlloca() || llvm::isa<llvm::Argument>(this->value);
 }
 
 // Returns true if the operand is a formal argument of a function
@@ -438,7 +438,7 @@ llvm::Value* SLIMOperand::getValue()
 // Returns the type of the operand
 llvm::Type * SLIMOperand::getType()
 {
-    if (this->value && llvm::isa<llvm::GlobalValue>(this->value))
+    if (this->value && (llvm::isa<llvm::GlobalValue>(this->value) || this->isAlloca() || llvm::isa<llvm::Argument>(this->value)))
     {
         return this->value->getType()->getContainedType(0);
     }

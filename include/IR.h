@@ -1,3 +1,5 @@
+#ifndef IR_H
+#define IR_H
 #include "Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Analysis/MemorySSA.h"
@@ -117,3 +119,4 @@ public:
     llvm::Instruction * getInstforIndx(long long index);
 };
 }
+#endif

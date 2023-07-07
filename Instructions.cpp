@@ -531,7 +531,7 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
 
     this->is_expression_assignment = true;
 
-    this->result = std::make_pair(result, 1);
+    // this->result = std::make_pair(result, 1);
 
     if (rhs_operand && (rhs_operand->getValue() != nullptr))
     {
@@ -543,11 +543,36 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
         }
     }
     
-    this->operands.push_back(std::make_pair(rhs_operand, 1));
+    // this->operands.push_back(std::make_pair(rhs_operand, 1));
     
     if (rhs_operand->isPointerVariable())
     {
         this->has_pointer_variables = true;
+    }
+
+    if ((result->isGlobalOrAddressTaken() || result->isGEPInInstr()) && (rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr()))
+    {
+        this->result = std::make_pair(result, 1);
+        this->operands.push_back(std::make_pair(rhs_operand, 0));
+    }
+    else if ((result->isGlobalOrAddressTaken() || result->isGEPInInstr()) && (!(rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr())))
+    {
+        this->result = std::make_pair(result, 1);
+        this->operands.push_back(std::make_pair(rhs_operand, 1));
+    }
+    else if ((!(result->isGlobalOrAddressTaken() || result->isGEPInInstr())) && (rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr()))
+    {
+        this->result = std::make_pair(result, 2);
+        this->operands.push_back(std::make_pair(rhs_operand, 0));
+    }
+    else if ((!(result->isGlobalOrAddressTaken() || result->isGEPInInstr())) && (!(rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr())))
+    {
+        this->result = std::make_pair(result, 2);
+        this->operands.push_back(std::make_pair(rhs_operand, 1));
+    }
+    else
+    {
+        llvm_unreachable("[Error] Unexpected type in parameter mapping statement!");
     }
 }
 
@@ -666,7 +691,7 @@ StoreInstruction::StoreInstruction(llvm::Instruction *instruction): BaseInstruct
     {
         this->is_constant_assignment = true;
 
-        if (llvm::isa<llvm::GlobalValue>(result_operand) || result_slim_operand->isGEPInInstr())
+        if (llvm::isa<llvm::GlobalValue>(result_operand) || result_slim_operand->isGEPInInstr() || result_slim_operand->isAlloca())
         {
             this->result = std::make_pair(result_slim_operand, 1);
         }
