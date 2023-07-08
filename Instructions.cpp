@@ -531,7 +531,7 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
 
     this->is_expression_assignment = true;
 
-    // this->result = std::make_pair(result, 1);
+    this->result = std::make_pair(result, 1);
 
     if (rhs_operand && (rhs_operand->getValue() != nullptr))
     {
@@ -550,29 +550,13 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
         this->has_pointer_variables = true;
     }
 
-    if ((result->isGlobalOrAddressTaken() || result->isGEPInInstr()) && (rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr()))
+    if (rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr())
     {
-        this->result = std::make_pair(result, 1);
         this->operands.push_back(std::make_pair(rhs_operand, 0));
     }
-    else if ((result->isGlobalOrAddressTaken() || result->isGEPInInstr()) && (!(rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr())))
+    else 
     {
-        this->result = std::make_pair(result, 1);
         this->operands.push_back(std::make_pair(rhs_operand, 1));
-    }
-    else if ((!(result->isGlobalOrAddressTaken() || result->isGEPInInstr())) && (rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr()))
-    {
-        this->result = std::make_pair(result, 2);
-        this->operands.push_back(std::make_pair(rhs_operand, 0));
-    }
-    else if ((!(result->isGlobalOrAddressTaken() || result->isGEPInInstr())) && (!(rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr())))
-    {
-        this->result = std::make_pair(result, 2);
-        this->operands.push_back(std::make_pair(rhs_operand, 1));
-    }
-    else
-    {
-        llvm_unreachable("[Error] Unexpected type in parameter mapping statement!");
     }
 }
 
