@@ -716,6 +716,8 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                 {
                     total_call_instructions++;
 
+                    this->num_call_instructions[&function] += 1;
+
                     CallInstruction *call_instruction = (CallInstruction *) base_instruction;
 
                     if (call_instruction->isIndirectCall())
@@ -1225,6 +1227,10 @@ void slim::IR::dumpIR()
     }
 }
 
+unsigned slim::IR::getNumCallInstructions(llvm::Function *function)
+{
+    return this->num_call_instructions[function];
+}
 
 void slim::IR::generateIR(){
 

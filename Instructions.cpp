@@ -550,7 +550,7 @@ LoadInstruction::LoadInstruction(llvm::CallInst *call_instruction, SLIMOperand *
         this->has_pointer_variables = true;
     }
 
-    if (rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr())
+    if (rhs_operand->isGlobalOrAddressTaken() || rhs_operand->isGEPInInstr() || llvm::isa<llvm::GlobalValue>(rhs_operand->getValue()))
     {
         this->operands.push_back(std::make_pair(rhs_operand, 0));
     }
@@ -901,6 +901,11 @@ GetElementPtrInstruction::GetElementPtrInstruction(llvm::Instruction *instructio
         for (int i = 0; i < instruction->getNumOperands(); i++)
         {
             llvm::Value *operand_i = instruction->getOperand(i);
+            
+            if (operand_i->stripPointerCasts())
+            {
+                operand_i = operand_i->stripPointerCasts();
+            }
 
             SLIMOperand *slim_operand_i = OperandRepository::getSLIMOperand(operand_i);
 
@@ -914,7 +919,16 @@ GetElementPtrInstruction::GetElementPtrInstruction(llvm::Instruction *instructio
             this->operands.push_back(std::make_pair(slim_operand_i, 0));
         }   
 
-        SLIMOperand * gep_main_slim_operand = new SLIMOperand(get_element_ptr->getPointerOperand());
+        SLIMOperand * gep_main_slim_operand;
+        
+        if (get_element_ptr->getPointerOperand()->stripPointerCasts())
+        {
+            gep_main_slim_operand = new SLIMOperand(get_element_ptr->getPointerOperand()->stripPointerCasts());
+        } 
+        else
+        {
+            gep_main_slim_operand = new SLIMOperand(get_element_ptr->getPointerOperand());
+        }
 
         // Create and store the index operands into the indices list
         for (int i = 1; i < get_element_ptr->getNumOperands(); i++)
@@ -935,6 +949,16 @@ GetElementPtrInstruction::GetElementPtrInstruction(llvm::Instruction *instructio
             }
             else
             {
+                if (index_val != nullptr)
+                {
+                    llvm::Value * rhs_operand_after_strip = llvm::dyn_cast<llvm::Value>(index_val->stripPointerCasts());
+
+                    if (rhs_operand_after_strip)
+                    {
+                        index_val = rhs_operand_after_strip;
+                    }
+                }
+
                 SLIMOperand *index_slim_operand = new SLIMOperand(index_val);
                 this->indices.push_back(index_slim_operand);
             }
@@ -993,10 +1017,16 @@ void GetElementPtrInstruction::printInstruction()
 
         llvm::outs() << get_element_ptr->getPointerOperand()->getName();
 
+        // if (gep_main_operand->getValue())
+        // {
+        //     gep_main_operand->printOperand(llvm::outs());
+        //     llvm::outs() << "\n";
+        // }
+
         for (int i = 1; i < get_element_ptr->getNumOperands(); i++)
         {
             llvm::Value *index_val = get_element_ptr->getOperand(i);
-
+            
             if (llvm::isa<llvm::Constant>(index_val))
             {
                 if (llvm::isa<llvm::ConstantInt>(index_val))

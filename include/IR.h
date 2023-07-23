@@ -31,6 +31,7 @@ protected:
     long long total_indirect_call_instructions;
     std::unordered_map<llvm::BasicBlock *, long long> basic_block_to_id;
     std::vector<llvm::Function *> functions;
+    std::unordered_map<llvm::Function *, unsigned> num_call_instructions;
 
 public:
     std::map<std::pair<llvm::Function *, llvm::BasicBlock *>, std::list<long long>> func_bb_to_inst_id;
@@ -98,6 +99,8 @@ public:
 
     // Dump the IR
     void dumpIR();
+
+    unsigned getNumCallInstructions(llvm::Function *function);
 };
 
 // Provides APIs similar to the older implementation of SLIM in order to support the implementations
