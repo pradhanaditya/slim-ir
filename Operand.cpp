@@ -325,7 +325,7 @@ bool SLIMOperand::isVariableGlobal()
         return llvm::isa<llvm::GlobalValue>(this->gep_main_operand);
     }
 
-    return this->is_global_or_address_taken;
+    return this->isGlobalOrAddressTaken() || llvm::isa<llvm::GlobalValue>(this->value);
 }
 
 // Returns true if the operand is a result of an alloca instruction
