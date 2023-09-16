@@ -489,7 +489,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                     if (base_instruction->getInstructionType() == InstructionType::GET_ELEMENT_PTR)
                     {
                         discarded_operands_for_ssa.insert(base_instruction->getResultOperand().first->getValue());
-                        
+                        this->total_instructions++;
                         continue ;
                     }
                     else if (base_instruction->getInstructionType() == InstructionType::ALLOCA)
@@ -499,6 +499,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         if (llvm::isa<llvm::PointerType>(result_operand->getType()) || llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
                         {
                             discarded_operands_for_ssa.insert(result_operand);
+                            this->total_instructions++;
                             continue ;
                         }
 
@@ -518,21 +519,25 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         if (discarded_operands_for_ssa.find(rhs_operand->getValue()) != discarded_operands_for_ssa.end())
                         {
                             discarded_operands_for_ssa.insert(load_inst->getResultOperand().first->getValue());
+                            this->total_instructions++;
                             continue ;
                         }
                         if (llvm::isa<llvm::PointerType>(rhs_operand->getValue()->getType()->getContainedType(0)))
                         {
                             // Discard the instruction
+                            this->total_instructions++;
                             continue ;
                         }
                         if (llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
                         {
                             discarded_operands_for_ssa.insert(result_operand->getValue());
+                            this->total_instructions++;
                             continue ;
                         }
                         if (llvm::isa<llvm::GEPOperator>(rhs_operand->getValue()) || llvm::isa<llvm::BitCastOperator>(rhs_operand->getValue()))
                         {
                             discarded_operands_for_ssa.insert(result_operand->getValue());
+                            this->total_instructions++;
                             continue ;
                         }
                     }
@@ -546,27 +551,32 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         if (discarded_operands_for_ssa.find(result_operand->getValue()) != discarded_operands_for_ssa.end())
                         {
                             discarded_operands_for_ssa.insert(result_operand->getValue());
+                            this->total_instructions++;
                             continue ;
                         }
                         else if (discarded_operands_for_ssa.find(store_inst->getOperand(0).first->getValue()) != discarded_operands_for_ssa.end())
                         {
                             discarded_operands_for_ssa.insert(result_operand->getValue());
+                            this->total_instructions++;
                             continue ;
                         }
 
                         if (llvm::isa<llvm::PointerType>(result_operand->getValue()->getType()->getContainedType(0)))
                         {
                             // Discard the instruction
+                            this->total_instructions++;
                             continue ;
                         }
 
                         if (llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
                         {
+                            this->total_instructions++;
                             continue ;
                         }
 
                         if (llvm::isa<llvm::GEPOperator>(result_operand->getValue()) || llvm::isa<llvm::BitCastOperator>(result_operand->getValue()))
                         {
+                            this->total_instructions++;
                             continue ;
                         }
                     }
@@ -586,20 +596,25 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         {
                             discarded_operands_for_ssa.insert(base_instruction->getResultOperand().first->getValue());
                         }
+
+                        this->total_instructions++;
                         continue ;
                     }
                     else
                     {
                         if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && llvm::isa<llvm::PointerType>(base_instruction->getResultOperand().first->getValue()->getType()))
                         {
+                            this->total_instructions++;
                             continue ;
                         }
                         if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && llvm::isa<llvm::StructType>(base_instruction->getResultOperand().first->getValue()->getType()))
                         {
+                            this->total_instructions++;
                             continue ;
                         }
                         if (base_instruction->getResultOperand().first && base_instruction->getResultOperand().first->getValue() && llvm::isa<llvm::ArrayType>(base_instruction->getResultOperand().first->getValue()->getType()))
                         {
+                            this->total_instructions++;
                             continue ;
                         }
                         bool flag = false;
@@ -627,6 +642,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
 
                         if (is_discarded)
                         {
+                            this->total_instructions++;
                             continue ;
                         }
                     }
