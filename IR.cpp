@@ -1,5 +1,7 @@
 #include "IR.h"
 
+std::map<std::string, llvm::Value *> name_to_variable_object;
+
 namespace slim
 {
     // Check if the SSA variable (created using MemorySSA) already exists or not
@@ -441,6 +443,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                         llvm::StringRef old_name = operand_i->getName();
                         operand_i->setName(old_name + "_" + function.getName());
                         renamed_temporaries.insert(operand_i);
+                        name_to_variable_object[operand_i->getName().str()] = operand_i;
                     }
                 }
                 
