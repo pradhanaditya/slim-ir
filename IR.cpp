@@ -499,7 +499,7 @@ slim::IR::IR(std::unique_ptr<llvm::Module> &module)
                     {
                         llvm::Value *result_operand = base_instruction->getResultOperand().first->getValue();
 
-                        if (llvm::isa<llvm::PointerType>(result_operand->getType()) || llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
+                        if (llvm::isa<llvm::ArrayType>(result_operand->getType()) || llvm::isa<llvm::StructType>(result_operand->getType()))
                         {
                             discarded_operands_for_ssa.insert(result_operand);
                             this->total_instructions++;
